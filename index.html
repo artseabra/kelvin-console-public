@@ -1,0 +1,1797 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kelvin Console | Conradi Map</title>
+  <style>
+    :root {
+      --bg: #020308;
+      --panel: rgba(6, 10, 18, 0.82);
+      --panel-strong: rgba(9, 15, 28, 0.94);
+      --line: rgba(126, 232, 255, 0.26);
+      --line-hot: rgba(126, 232, 255, 0.55);
+      --text: #eef9ff;
+      --muted: #93a8b8;
+      --cyan: #65dcff;
+      --green: #82f7b6;
+      --amber: #ffd166;
+      --rose: #ff78ad;
+      --violet: #b9a4ff;
+      --danger: #ff6b6b;
+      --radius: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      content: "";
+      background:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+      background-size: 100% 3px, 42px 42px;
+      mix-blend-mode: screen;
+      opacity: 0.18;
+    }
+
+    #field {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #010207;
+      touch-action: none;
+    }
+
+    .shell {
+      position: fixed;
+      inset: 0;
+      z-index: 3;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 366px);
+      pointer-events: none;
+    }
+
+    .hud {
+      align-self: start;
+      justify-self: start;
+      margin: 18px;
+      display: grid;
+      gap: 10px;
+      pointer-events: none;
+      max-width: min(560px, calc(100vw - 410px));
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      width: fit-content;
+      padding: 10px 12px;
+      border: 1px solid rgba(126, 232, 255, 0.22);
+      border-radius: var(--radius);
+      background: rgba(2, 6, 13, 0.62);
+      box-shadow: 0 0 28px rgba(0, 182, 255, 0.12);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand-mark {
+      width: 10px;
+      height: 36px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, var(--cyan), var(--green), var(--rose));
+      box-shadow: 0 0 22px rgba(101, 220, 255, 0.72);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.05;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .brand small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      letter-spacing: 0;
+    }
+
+    .formula {
+      padding: 12px 14px;
+      border-left: 2px solid rgba(130, 247, 182, 0.72);
+      background: linear-gradient(90deg, rgba(6, 14, 20, 0.78), rgba(6, 14, 20, 0));
+      color: rgba(238, 249, 255, 0.9);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.65;
+      text-shadow: 0 0 16px rgba(101, 220, 255, 0.28);
+    }
+
+    .telemetry {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(78px, 1fr));
+      gap: 8px;
+      max-width: 470px;
+    }
+
+    .meter {
+      min-height: 58px;
+      padding: 9px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: var(--radius);
+      background: rgba(3, 8, 15, 0.62);
+      backdrop-filter: blur(12px);
+    }
+
+    .meter span {
+      display: block;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    .meter strong {
+      display: block;
+      margin-top: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 14px;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .panel {
+      pointer-events: auto;
+      align-self: stretch;
+      justify-self: stretch;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      max-height: 100vh;
+      border-left: 1px solid rgba(126, 232, 255, 0.24);
+      background:
+        radial-gradient(circle at 20% 0%, rgba(255, 120, 173, 0.12), transparent 32%),
+        linear-gradient(180deg, var(--panel-strong), rgba(3, 5, 10, 0.82));
+      box-shadow: -26px 0 70px rgba(0, 0, 0, 0.48);
+      backdrop-filter: blur(20px);
+    }
+
+    .panel-head {
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid rgba(126, 232, 255, 0.16);
+    }
+
+    .eyebrow {
+      color: var(--green);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    .panel-head h2 {
+      margin: 6px 0 4px;
+      font-size: 19px;
+      letter-spacing: 0;
+    }
+
+    .panel-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .panel-body {
+      overflow: auto;
+      padding: 16px 18px 22px;
+      scrollbar-color: rgba(126, 232, 255, 0.42) transparent;
+    }
+
+    .section {
+      padding: 14px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .section:first-child {
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      color: rgba(238, 249, 255, 0.86);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .button-row,
+    .preset-grid,
+    .split {
+      display: grid;
+      gap: 8px;
+    }
+
+    .button-row {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .split {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    button,
+    select {
+      height: 38px;
+      border: 1px solid rgba(126, 232, 255, 0.26);
+      border-radius: var(--radius);
+      background: rgba(8, 17, 29, 0.82);
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      transition: border-color 150ms ease, background 150ms ease, color 150ms ease, transform 150ms ease;
+    }
+
+    button:hover,
+    select:hover {
+      border-color: rgba(126, 232, 255, 0.72);
+      background: rgba(15, 34, 51, 0.92);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.is-active {
+      border-color: rgba(130, 247, 182, 0.82);
+      color: #07120e;
+      background: linear-gradient(180deg, rgba(130, 247, 182, 0.94), rgba(101, 220, 255, 0.86));
+      box-shadow: 0 0 22px rgba(130, 247, 182, 0.18);
+    }
+
+    button.danger {
+      border-color: rgba(255, 107, 107, 0.45);
+      color: #ffdede;
+    }
+
+    .icon-button,
+    .command-button {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      overflow: visible;
+    }
+
+    .icon-button svg,
+    .command-button svg {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .command-button {
+      font-size: 12px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .tip-popover {
+      position: fixed;
+      z-index: 100;
+      width: max-content;
+      max-width: min(280px, calc(100vw - 28px));
+      padding: 9px 10px;
+      border: 1px solid rgba(126, 232, 255, 0.32);
+      border-radius: var(--radius);
+      background: rgba(3, 8, 15, 0.96);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.44);
+      color: rgba(238, 249, 255, 0.92);
+      font-size: 11px;
+      line-height: 1.35;
+      text-align: left;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 120ms ease, transform 120ms ease;
+    }
+
+    .tip-popover.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .tip-popover strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--green);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    .tip-popover span {
+      display: block;
+      color: rgba(238, 249, 255, 0.86);
+    }
+
+    .paint-cursor {
+      position: fixed;
+      z-index: 4;
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(130, 247, 182, 0.86);
+      border-radius: 999px;
+      box-shadow: 0 0 18px rgba(130, 247, 182, 0.32), inset 0 0 18px rgba(101, 220, 255, 0.12);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(0.94);
+      transition: opacity 120ms ease, transform 120ms ease, width 120ms ease, height 120ms ease;
+    }
+
+    .paint-cursor::before,
+    .paint-cursor::after {
+      position: absolute;
+      content: "";
+      pointer-events: none;
+    }
+
+    .paint-cursor::before {
+      inset: 50% auto auto 50%;
+      width: 8px;
+      height: 8px;
+      border-left: 1px solid rgba(238, 249, 255, 0.72);
+      border-top: 1px solid rgba(238, 249, 255, 0.72);
+      transform: translate(-50%, -50%) rotate(45deg);
+    }
+
+    .paint-cursor::after {
+      left: 50%;
+      top: calc(100% + 7px);
+      padding: 3px 6px;
+      border: 1px solid rgba(130, 247, 182, 0.34);
+      border-radius: 999px;
+      background: rgba(3, 8, 15, 0.86);
+      color: rgba(130, 247, 182, 0.94);
+      content: "SEED";
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 9px;
+      transform: translateX(-50%);
+    }
+
+    body.paint-mode #field {
+      cursor: none;
+    }
+
+    .paint-cursor.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .paint-cursor.painting {
+      border-color: rgba(255, 209, 102, 0.96);
+      box-shadow: 0 0 22px rgba(255, 209, 102, 0.36), inset 0 0 22px rgba(255, 209, 102, 0.16);
+      transform: translate(-50%, -50%) scale(0.82);
+    }
+
+    .preset-grid {
+      grid-template-columns: 1fr 1fr;
+      max-height: 292px;
+      overflow: auto;
+      padding-right: 2px;
+      scrollbar-color: rgba(126, 232, 255, 0.42) transparent;
+    }
+
+    .preset-grid button {
+      display: grid;
+      height: auto;
+      min-height: 58px;
+      align-items: center;
+      justify-content: stretch;
+      padding: 9px 10px;
+      gap: 5px;
+      text-align: left;
+    }
+
+    .preset-grid span {
+      min-width: 0;
+      color: rgba(238, 249, 255, 0.92);
+      line-height: 1.2;
+      white-space: normal;
+    }
+
+    .preset-grid code {
+      display: block;
+      color: var(--amber);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 10px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .control {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr) 62px;
+      align-items: center;
+      gap: 10px;
+      min-height: 34px;
+      margin: 8px 0;
+    }
+
+    .control label {
+      color: rgba(238, 249, 255, 0.78);
+      font-size: 12px;
+    }
+
+    .readout {
+      justify-self: end;
+      color: var(--amber);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--cyan);
+    }
+
+    .inset-wrap {
+      display: grid;
+      grid-template-columns: 168px 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    #inset {
+      width: 168px;
+      height: 168px;
+      border: 1px solid rgba(126, 232, 255, 0.28);
+      border-radius: var(--radius);
+      background: rgba(0, 0, 0, 0.22);
+    }
+
+    .inset-copy {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .source-link {
+      color: var(--cyan);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(101, 220, 255, 0.42);
+      width: fit-content;
+    }
+
+    .source-link:hover {
+      color: white;
+      border-color: white;
+    }
+
+    .status-line {
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 99px;
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 5;
+      right: 386px;
+      bottom: 22px;
+      max-width: 320px;
+      padding: 12px 14px;
+      border: 1px solid rgba(130, 247, 182, 0.46);
+      border-radius: var(--radius);
+      background: rgba(4, 12, 10, 0.88);
+      color: var(--text);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38);
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(0, 0, 0, 0.54);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease;
+    }
+
+    .modal-backdrop.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      width: min(440px, 100%);
+      border: 1px solid rgba(255, 209, 102, 0.42);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(12, 13, 18, 0.98), rgba(4, 7, 13, 0.98));
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.58);
+      padding: 18px;
+    }
+
+    .modal h2 {
+      margin: 6px 0 8px;
+      font-size: 18px;
+    }
+
+    .modal p {
+      margin: 0 0 14px;
+      color: rgba(238, 249, 255, 0.76);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .modal-meter {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 12px 0 14px;
+    }
+
+    .modal-meter div {
+      padding: 9px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .modal-meter span,
+    .modal-meter strong {
+      display: block;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .modal-meter span {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    .modal-meter strong {
+      margin-top: 4px;
+      color: var(--amber);
+      font-size: 13px;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    @media (max-width: 940px) {
+      .shell {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr) auto;
+      }
+
+      .panel {
+        align-self: end;
+        max-height: 52vh;
+        border-left: 0;
+        border-top: 1px solid rgba(126, 232, 255, 0.24);
+      }
+
+      .hud {
+        max-width: calc(100vw - 36px);
+      }
+
+      .telemetry {
+        grid-template-columns: repeat(2, minmax(86px, 1fr));
+      }
+
+      .toast {
+        right: 18px;
+        bottom: calc(52vh + 18px);
+      }
+    }
+
+    @media (max-width: 540px) {
+      .button-row,
+      .split,
+      .preset-grid,
+      .inset-wrap {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .inset-copy {
+        grid-column: 1 / -1;
+      }
+
+      .control {
+        grid-template-columns: 74px minmax(0, 1fr) 56px;
+      }
+
+      .brand h1 {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="field" aria-label="Animated Conradi map attractor field"></canvas>
+
+  <main class="shell">
+    <div class="hud" aria-live="polite">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div>
+          <h1>Kelvin Console</h1>
+          <small>Conradi map instrument</small>
+        </div>
+      </div>
+      <div class="formula">
+        x<sub>n+1</sub> = sin(x<sub>n</sub><sup>2</sup> - y<sub>n</sub><sup>2</sup> + a)<br>
+        y<sub>n+1</sub> = cos(2x<sub>n</sub>y<sub>n</sub> + b)
+      </div>
+      <div class="telemetry">
+        <div class="meter"><span>a</span><strong id="hudA">0.459</strong></div>
+        <div class="meter"><span>b</span><strong id="hudB">1.923</strong></div>
+        <div class="meter"><span>Energy</span><strong id="hudEnergy">0.000</strong></div>
+        <div class="meter"><span>FPS</span><strong id="hudFps">--</strong></div>
+      </div>
+    </div>
+
+    <aside class="panel" aria-label="Kelvin Console controls">
+      <header class="panel-head">
+        <div class="eyebrow">Share artifact</div>
+        <h2>Listen to the attractor</h2>
+        <p>Real-time control surface for the 2D iterative system in Simone Conradi's animation.</p>
+      </header>
+
+      <div class="panel-body">
+        <section class="section">
+          <div class="section-title"><span>Playback</span><span id="stateLabel">RUNNING</span></div>
+          <div class="button-row">
+            <button id="playBtn" class="icon-button is-active" aria-label="Pause field" data-tip-title="Pause field" data-tip-body="Stops the animation clock. The current attractor stays on screen.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14"></path><path d="M16 5v14"></path></svg>
+              <span class="sr-only">Pause</span>
+            </button>
+            <button id="soundBtn" class="icon-button" aria-label="Enable sound" data-tip-title="Enable sound" data-tip-body="Starts browser audio after your click. The tone follows particle motion, density, and parameter changes.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"></path><path d="m16 9 5 5"></path><path d="m21 9-5 5"></path></svg>
+              <span class="sr-only">Enable sound</span>
+            </button>
+            <button id="resetBtn" class="icon-button" aria-label="Reset console" data-tip-title="Reset console" data-tip-body="Pauses the field, turns sound off, disables sweep and inject, then re-seeds the particles at the current a,b coordinate.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v6h6"></path></svg>
+              <span class="sr-only">Reset console</span>
+            </button>
+            <button id="randomBtn" class="icon-button" aria-label="Randomize parameters" data-tip-title="Randomize a,b" data-tip-body="Jumps to a new coordinate in the parameter inset. Useful for discovering unexpected attractors.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8 8h.01"></path><path d="M16 8h.01"></path><path d="M12 12h.01"></path><path d="M8 16h.01"></path><path d="M16 16h.01"></path></svg>
+              <span class="sr-only">Randomize parameters</span>
+            </button>
+          </div>
+          <div class="split" style="margin-top:8px">
+            <button id="sweepBtn" class="command-button" aria-label="Toggle parameter sweep" data-tip-title="Sweep" data-tip-body="Automatically moves a and b through the inset map so the attractor morphs over time. Touch a slider or preset to take manual control again.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.6-6.1"></path><path d="M18 2v4h-4"></path><path d="M21 12a9 9 0 0 1-15.6 6.1"></path><path d="M6 22v-4h4"></path></svg>
+              <span>Sweep</span>
+            </button>
+            <button id="injectBtn" class="command-button" aria-label="Toggle paintbrush" data-tip-title="Paintbrush" data-tip-body="Turns the field into a seed brush. Drag on the attractor to plant fresh particles and watch how the map absorbs them.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"></circle><path d="M12 3v3"></path><path d="M12 18v3"></path><path d="M3 12h3"></path><path d="M18 12h3"></path><circle cx="12" cy="12" r="1"></circle></svg>
+              <span>Paint</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title"><span>Parameters</span><span>0 to 2pi</span></div>
+          <div class="control">
+            <label for="aRange">a</label>
+            <input id="aRange" type="range" min="0" max="6.283185307179586" step="0.001" value="0.459">
+            <span class="readout" id="aOut">0.459</span>
+          </div>
+          <div class="control">
+            <label for="bRange">b</label>
+            <input id="bRange" type="range" min="0" max="6.283185307179586" step="0.001" value="1.923">
+            <span class="readout" id="bOut">1.923</span>
+          </div>
+          <div class="control">
+            <label for="stepsRange">Speed</label>
+            <input id="stepsRange" type="range" min="1" max="24" step="1" value="3">
+            <span class="readout" id="stepsOut">3x</span>
+          </div>
+          <div class="control">
+            <label for="particlesRange">Points</label>
+            <input id="particlesRange" type="range" min="3000" max="42000" step="1000" value="6000">
+            <span class="readout" id="particlesOut">6k</span>
+          </div>
+          <div class="control">
+            <label for="fadeRange">Trails</label>
+            <input id="fadeRange" type="range" min="0.82" max="0.985" step="0.001" value="0.955">
+            <span class="readout" id="fadeOut">0.955</span>
+          </div>
+          <div class="control">
+            <label for="glowRange">Glow</label>
+            <input id="glowRange" type="range" min="0" max="6" step="1" value="0">
+            <span class="readout" id="glowOut">0</span>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title"><span>Parameter Space</span><span>a,b</span></div>
+          <div class="inset-wrap">
+            <canvas id="inset" width="168" height="168" aria-label="Parameter inset"></canvas>
+            <div class="inset-copy">
+              <span>Each point is bounded by sin and cos, then pushed through the map again. The small dot tracks the active (a,b) coordinate.</span>
+              <a class="source-link" href="https://fronkonstin.com/2019/10/28/the-chaos-game-an-experiment-about-fractals-recursivity-and-creative-coding/" target="_blank" rel="noreferrer">Fronkonstin chaos-game note</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title"><span>Presets</span><span id="presetCount">sampled</span></div>
+          <div class="preset-grid" id="presetGrid"></div>
+        </section>
+
+        <section class="section">
+          <div class="section-title"><span>Audio</span><span id="audioLabel">OFF</span></div>
+          <div class="control">
+            <label for="volumeRange">Gain</label>
+            <input id="volumeRange" type="range" min="0" max="0.8" step="0.01" value="0.22">
+            <span class="readout" id="volumeOut">0.22</span>
+          </div>
+          <div class="control">
+            <label for="senseRange">Sense</label>
+            <input id="senseRange" type="range" min="0.2" max="2.6" step="0.05" value="1.1">
+            <span class="readout" id="senseOut">1.10</span>
+          </div>
+          <div class="control">
+            <label for="filterRange">Filter</label>
+            <input id="filterRange" type="range" min="400" max="6200" step="20" value="2400">
+            <span class="readout" id="filterOut">2400</span>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title"><span>Output</span><span>local</span></div>
+          <div class="split">
+            <button id="copyBtn" title="Copy a short note for Simone">Copy note</button>
+            <button id="exportBtn" title="Export current frame as PNG">PNG</button>
+          </div>
+          <div class="split" style="margin-top:8px">
+            <select id="paletteSelect" title="Color palette" aria-label="Color palette">
+              <option value="kelvin">Kelvin blue</option>
+              <option value="aurora">Aurora</option>
+              <option value="ember">Ember</option>
+              <option value="violet">Violet</option>
+            </select>
+            <button id="clearBtn" class="danger" title="Clear the field">Clear</button>
+          </div>
+          <div class="status-line">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="statusText">Ready</span>
+          </div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="tip-popover" id="tooltip" role="tooltip" aria-hidden="true"></div>
+  <div class="paint-cursor" id="brushCursor" aria-hidden="true"></div>
+  <div class="modal-backdrop" id="perfModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="perfTitle">
+      <div class="eyebrow">Performance guard</div>
+      <h2 id="perfTitle">Glow is stressing the renderer</h2>
+      <p id="perfBody">The console clamped glow to protect the animation loop. Revert to safe mode, or proceed muted if you only need a still frame or PNG.</p>
+      <div class="modal-meter">
+        <div><span>Requested glow</span><strong id="perfGlowOut">0</strong></div>
+        <div><span>Observed FPS</span><strong id="perfFpsOut">--</strong></div>
+      </div>
+      <div class="modal-actions">
+        <button id="perfRevertBtn">Revert safe</button>
+        <button id="perfProceedBtn" class="danger">Proceed muted</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const TAU = Math.PI * 2;
+      const SAFE_GLOW_MAX = 2;
+      const CAUTION_GLOW_MAX = 6;
+      const canvas = document.getElementById("field");
+      const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
+      const inset = document.getElementById("inset");
+      const ictx = inset.getContext("2d");
+      const panel = document.querySelector(".panel");
+
+      const palettes = {
+        kelvin: {
+          bg: "rgba(1, 2, 7, ALPHA)",
+          trail: "rgba(72, 187, 255, ALPHA)",
+          hot: "rgba(220, 250, 255, ALPHA)",
+          glow: "rgba(72, 187, 255, 0.76)"
+        },
+        aurora: {
+          bg: "rgba(2, 4, 7, ALPHA)",
+          trail: "rgba(118, 246, 183, ALPHA)",
+          hot: "rgba(255, 209, 102, ALPHA)",
+          glow: "rgba(118, 246, 183, 0.72)"
+        },
+        ember: {
+          bg: "rgba(5, 2, 4, ALPHA)",
+          trail: "rgba(255, 133, 88, ALPHA)",
+          hot: "rgba(255, 221, 142, ALPHA)",
+          glow: "rgba(255, 120, 80, 0.72)"
+        },
+        violet: {
+          bg: "rgba(3, 2, 9, ALPHA)",
+          trail: "rgba(185, 164, 255, ALPHA)",
+          hot: "rgba(255, 120, 173, ALPHA)",
+          glow: "rgba(185, 164, 255, 0.74)"
+        }
+      };
+
+      const presets = [
+        ["Simone drift", 0.459, 1.923],
+        ["Mirror basin", 3.534, 4.712],
+        ["Soft lobe", 0.393, 4.712],
+        ["Twin fold", 3.534, 1.571],
+        ["Turbulent pearl", 3.731, 5.301],
+        ["Amber counterflow", 3.731, 4.123],
+        ["Counterflow", 0.589, 0.982],
+        ["Night aperture", 5.955, 5.519],
+        ["Pinched bloom", 2.726, 2.461],
+        ["Ribbon lock", 2.414, 1.105],
+        ["Oblique basin", 3.227, 0.719],
+        ["Deep loop", 5.489, 5.159],
+        ["Blue hinge", 5.694, 3.927],
+        ["Quiet fold", 0.251, 3.890],
+        ["Low ember", 1.870, 0.554],
+        ["Glass wing", 0.785, 2.356],
+        ["Central orbit", 1.571, 3.142],
+        ["Polar bloom", 4.712, 0.785]
+      ];
+
+      const CONFIG_VERSION = 5;
+      const state = {
+        a: 0.459,
+        b: 1.923,
+        steps: 3,
+        particles: 6000,
+        fade: 0.955,
+        glow: 0,
+        palette: "kelvin",
+        playing: true,
+        sweep: false,
+        inject: false,
+        volume: 0.22,
+        sensitivity: 1.1,
+        filter: 2400,
+        energy: 0,
+        avgX: 0,
+        avgY: 0,
+        fps: 0
+      };
+
+      let xs = new Float32Array(state.particles);
+      let ys = new Float32Array(state.particles);
+      let view = { w: 0, h: 0, cx: 0, cy: 0, scale: 1 };
+      let pointerDown = false;
+      let renderCursor = 0;
+      let dynamicBatch = 1400;
+      let lastRender = 0;
+      let fpsFrames = 0;
+      let fpsMark = performance.now();
+      let toastTimer = 0;
+      let paramTrail = [];
+      let audio = null;
+      let glowCaution = false;
+      let pendingUnsafeGlow = SAFE_GLOW_MAX;
+      let perfGuardOpen = false;
+      let perfGuardCooldownUntil = 0;
+
+      const ids = [
+        "hudA", "hudB", "hudEnergy", "hudFps", "stateLabel", "playBtn", "soundBtn",
+        "resetBtn", "randomBtn", "sweepBtn", "injectBtn", "aRange", "bRange",
+        "stepsRange", "particlesRange", "fadeRange", "glowRange", "aOut", "bOut",
+        "stepsOut", "particlesOut", "fadeOut", "glowOut", "presetGrid", "audioLabel",
+        "volumeRange", "senseRange", "filterRange", "volumeOut", "senseOut",
+        "filterOut", "copyBtn", "exportBtn", "paletteSelect", "clearBtn", "statusText", "toast", "tooltip", "brushCursor", "presetCount",
+        "perfModal", "perfBody", "perfGlowOut", "perfFpsOut", "perfRevertBtn", "perfProceedBtn"
+      ];
+      const el = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
+      const icons = {
+        play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5v14l11-7z"></path></svg>',
+        pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14"></path><path d="M16 5v14"></path></svg>',
+        speaker: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"></path><path d="M15 9.5a4 4 0 0 1 0 5"></path><path d="M18 7a8 8 0 0 1 0 10"></path></svg>',
+        muted: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"></path><path d="m16 9 5 5"></path><path d="m21 9-5 5"></path></svg>'
+      };
+
+      function setIconButton(button, icon, label) {
+        button.innerHTML = `${icon}<span class="sr-only">${label}</span>`;
+        button.setAttribute("aria-label", label);
+      }
+
+      function rgba(template, alpha) {
+        return template.replace("ALPHA", alpha.toFixed(4));
+      }
+
+      function clamp01(value) {
+        return Math.max(0, Math.min(1, value));
+      }
+
+      function wrapTau(value) {
+        value %= TAU;
+        return value < 0 ? value + TAU : value;
+      }
+
+      function format(value, digits = 3) {
+        return Number(value).toFixed(digits);
+      }
+
+      function showToast(message) {
+        clearTimeout(toastTimer);
+        el.toast.textContent = message;
+        el.toast.classList.add("show");
+        toastTimer = setTimeout(() => el.toast.classList.remove("show"), 2200);
+      }
+
+      function showTip(target) {
+        const title = target.dataset.tipTitle || "";
+        const body = target.dataset.tipBody || "";
+        if (!title && !body) return;
+        el.tooltip.innerHTML = `<strong>${title}</strong><span>${body}</span>`;
+        el.tooltip.setAttribute("aria-hidden", "false");
+        el.tooltip.classList.add("show");
+        placeTip(target);
+      }
+
+      function placeTip(target) {
+        if (!el.tooltip.classList.contains("show")) return;
+        const rect = target.getBoundingClientRect();
+        const tipRect = el.tooltip.getBoundingClientRect();
+        const margin = 12;
+        let left = rect.left + rect.width / 2 - tipRect.width / 2;
+        let top = rect.bottom + 10;
+
+        if (top + tipRect.height > window.innerHeight - margin) {
+          top = rect.top - tipRect.height - 10;
+        }
+
+        left = Math.max(margin, Math.min(window.innerWidth - tipRect.width - margin, left));
+        top = Math.max(margin, Math.min(window.innerHeight - tipRect.height - margin, top));
+        el.tooltip.style.left = `${left}px`;
+        el.tooltip.style.top = `${top}px`;
+      }
+
+      function hideTip() {
+        el.tooltip.classList.remove("show");
+        el.tooltip.setAttribute("aria-hidden", "true");
+      }
+
+      function setStatus(message) {
+        el.statusText.textContent = message;
+      }
+
+      function muteAudioNow() {
+        if (!audio) return;
+        audio.enabled = false;
+        audio.master.gain.setTargetAtTime(0, audio.ac.currentTime, 0.04);
+      }
+
+      function hidePerfModal() {
+        perfGuardOpen = false;
+        el.perfModal.classList.remove("show");
+        el.perfModal.setAttribute("aria-hidden", "true");
+      }
+
+      function showPerfModal(requestedGlow, observedFps, reason) {
+        pendingUnsafeGlow = Math.min(CAUTION_GLOW_MAX, Math.max(SAFE_GLOW_MAX + 1, Number(requestedGlow) || SAFE_GLOW_MAX + 1));
+        perfGuardOpen = true;
+        el.perfBody.textContent = reason || "The console clamped glow to protect the animation loop. Revert to safe mode, or proceed muted if you only need a still frame or PNG.";
+        el.perfGlowOut.textContent = String(pendingUnsafeGlow);
+        el.perfFpsOut.textContent = observedFps ? String(Math.round(observedFps)) : "--";
+        el.perfModal.classList.add("show");
+        el.perfModal.setAttribute("aria-hidden", "false");
+      }
+
+      function clampGlowForSafety(requestedGlow, observedFps, reason) {
+        state.glow = 0;
+        glowCaution = false;
+        perfGuardCooldownUntil = performance.now() + 2400;
+        muteAudioNow();
+        dynamicBatch = Math.min(dynamicBatch, 720);
+        syncControls(false);
+        setStatus("Glow clamped for performance; audio muted");
+        showPerfModal(requestedGlow, observedFps, reason);
+      }
+
+      function revertSafeGlow() {
+        state.glow = 0;
+        glowCaution = false;
+        hidePerfModal();
+        syncControls();
+        setStatus("Safe glow restored");
+      }
+
+      function proceedWithGlow() {
+        glowCaution = true;
+        state.glow = pendingUnsafeGlow;
+        state.playing = false;
+        muteAudioNow();
+        hidePerfModal();
+        syncControls();
+        fadeField();
+        drawAttractor();
+        drawInset(performance.now());
+        setStatus("Caution glow rendered once: paused and muted for PNG export");
+      }
+
+      function updatePaintMode() {
+        document.body.classList.toggle("paint-mode", state.inject);
+        if (!state.inject) {
+          pointerDown = false;
+          el.brushCursor.classList.remove("show", "painting");
+        }
+      }
+
+      function updateBrushCursor(event) {
+        if (!state.inject) return;
+        const size = Math.max(28, Math.min(72, view.scale * 0.12));
+        el.brushCursor.style.width = `${size}px`;
+        el.brushCursor.style.height = `${size}px`;
+        el.brushCursor.style.left = `${event.clientX}px`;
+        el.brushCursor.style.top = `${event.clientY}px`;
+        el.brushCursor.classList.add("show");
+        el.brushCursor.classList.toggle("painting", pointerDown);
+      }
+
+      function saveConfig() {
+        const payload = {
+          version: CONFIG_VERSION,
+          a: state.a,
+          b: state.b,
+          steps: state.steps,
+          particles: state.particles,
+          fade: state.fade,
+          glow: state.glow,
+          palette: state.palette,
+          volume: state.volume,
+          sensitivity: state.sensitivity,
+          filter: state.filter
+        };
+        localStorage.setItem("kelvin.conradi.config", JSON.stringify(payload));
+      }
+
+      function loadConfig() {
+        try {
+          const raw = localStorage.getItem("kelvin.conradi.config");
+          if (!raw) return;
+          const parsed = JSON.parse(raw);
+          if (parsed.version !== CONFIG_VERSION) return;
+          Object.assign(state, parsed);
+          state.glow = Math.min(Number(state.glow) || 0, SAFE_GLOW_MAX);
+        } catch (error) {
+          console.warn("Could not load Kelvin config", error);
+        }
+      }
+
+      function resize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        canvas.style.width = `${w}px`;
+        canvas.style.height = `${h}px`;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.globalCompositeOperation = "copy";
+        ctx.fillStyle = "#010207";
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalCompositeOperation = "source-over";
+        refreshView();
+      }
+
+      function refreshView() {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const panelRect = panel.getBoundingClientRect();
+        const desktop = w > 940;
+        const usableW = desktop ? Math.max(300, w - panelRect.width) : w;
+        const usableH = desktop ? h : Math.max(260, h - panelRect.height - 14);
+        view.w = w;
+        view.h = h;
+        view.cx = desktop ? usableW * 0.5 : w * 0.5;
+        view.cy = desktop ? h * 0.54 : usableH * 0.5;
+        view.scale = Math.max(110, Math.min(usableW, usableH) * (desktop ? 0.42 : 0.38));
+      }
+
+      function resetParticles() {
+        xs = new Float32Array(state.particles);
+        ys = new Float32Array(state.particles);
+        for (let i = 0; i < state.particles; i++) {
+          const angle = Math.random() * TAU;
+          const radius = Math.sqrt(Math.random()) * 2.0;
+          xs[i] = Math.cos(angle) * radius;
+          ys[i] = Math.sin(angle) * radius;
+        }
+        renderCursor = 0;
+        dynamicBatch = Math.min(state.particles, 1400);
+        warmParticles(18);
+        clearField();
+        primeField(4);
+      }
+
+      function primeField(frames) {
+        const oldGlow = state.glow;
+        state.glow = Math.max(state.glow, 2);
+        for (let i = 0; i < frames; i++) {
+          drawAttractor();
+        }
+        state.glow = oldGlow;
+      }
+
+      function warmParticles(iterations) {
+        for (let step = 0; step < iterations; step++) {
+          for (let i = 0; i < state.particles; i++) {
+            const x = xs[i];
+            const y = ys[i];
+            xs[i] = Math.sin(x * x - y * y + state.a);
+            ys[i] = Math.cos(2 * x * y + state.b);
+          }
+        }
+      }
+
+      function clearField() {
+        const pal = palettes[state.palette];
+        ctx.save();
+        ctx.globalCompositeOperation = "copy";
+        ctx.fillStyle = rgba(pal.bg, 1);
+        ctx.fillRect(0, 0, view.w, view.h);
+        ctx.restore();
+      }
+
+      function screenToWorld(clientX, clientY) {
+        return {
+          x: (clientX - view.cx) / view.scale,
+          y: -(clientY - view.cy) / view.scale
+        };
+      }
+
+      function injectAt(clientX, clientY, amount = 900) {
+        const p = screenToWorld(clientX, clientY);
+        for (let n = 0; n < amount; n++) {
+          const i = (Math.random() * state.particles) | 0;
+          const angle = Math.random() * TAU;
+          const radius = Math.random() * 0.09;
+          xs[i] = p.x + Math.cos(angle) * radius;
+          ys[i] = p.y + Math.sin(angle) * radius;
+        }
+        setStatus("Injected local particles");
+      }
+
+      function fadeField() {
+        const pal = palettes[state.palette];
+        const decay = clamp01(1 - state.fade);
+        ctx.save();
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = rgba(pal.bg, Math.max(0.012, decay));
+        ctx.fillRect(0, 0, view.w, view.h);
+        ctx.restore();
+      }
+
+      function drawReticle() {
+        const pal = palettes[state.palette];
+        ctx.save();
+        ctx.globalCompositeOperation = "source-over";
+        ctx.strokeStyle = rgba(pal.trail, 0.07);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(view.cx, view.cy, view.scale, 0, TAU);
+        ctx.moveTo(view.cx - view.scale, view.cy);
+        ctx.lineTo(view.cx + view.scale, view.cy);
+        ctx.moveTo(view.cx, view.cy - view.scale);
+        ctx.lineTo(view.cx, view.cy + view.scale);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawAttractor() {
+        const pal = palettes[state.palette];
+        const count = state.particles;
+        const steps = state.steps;
+        const batch = Math.max(360, Math.min(count, Math.round(dynamicBatch)));
+        const lineStride = Math.max(1, Math.ceil(batch / 260));
+        const glowLevel = Math.max(0, Math.min(CAUTION_GLOW_MAX, state.glow));
+        const safeGlow = Math.min(glowLevel, SAFE_GLOW_MAX);
+        const trailAlpha = Math.min(0.07, (0.028 + safeGlow * 0.006) * Math.sqrt(count / batch));
+        const hotAlpha = Math.min(0.22, (0.085 + safeGlow * 0.018) * Math.sqrt(count / batch));
+        const pointSize = 1.1 + safeGlow * 0.18;
+        let motion = 0;
+        let sampleX = 0;
+        let sampleY = 0;
+        let samples = 0;
+
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = 0.45;
+        ctx.shadowBlur = glowCaution && glowLevel > SAFE_GLOW_MAX ? Math.min(1.5, glowLevel * 0.18) : 0;
+        ctx.shadowColor = pal.glow;
+        ctx.beginPath();
+        ctx.fillStyle = rgba(pal.hot, hotAlpha);
+
+        for (let n = 0; n < batch; n++) {
+          const i = (renderCursor + n) % count;
+          const startX = xs[i];
+          const startY = ys[i];
+          let x = startX;
+          let y = startY;
+
+          for (let step = 0; step < steps; step++) {
+            const nx = Math.sin(x * x - y * y + state.a);
+            const ny = Math.cos(2 * x * y + state.b);
+            motion += Math.abs(nx - x) + Math.abs(ny - y);
+            x = nx;
+            y = ny;
+          }
+
+          xs[i] = x;
+          ys[i] = y;
+
+          if (i % lineStride === 0) {
+            const sx0 = view.cx + startX * view.scale;
+            const sy0 = view.cy - startY * view.scale;
+            const sx1 = view.cx + x * view.scale;
+            const sy1 = view.cy - y * view.scale;
+            if (Math.abs(sx1 - sx0) + Math.abs(sy1 - sy0) < view.scale * 1.8) {
+              ctx.moveTo(sx0, sy0);
+              ctx.lineTo(sx1, sy1);
+            } else {
+              ctx.rect(sx1, sy1, 0.45, 0.45);
+            }
+          }
+
+          ctx.fillRect(view.cx + x * view.scale, view.cy - y * view.scale, pointSize, pointSize);
+          sampleX += x;
+          sampleY += y;
+          samples++;
+        }
+        renderCursor = (renderCursor + batch) % count;
+
+        ctx.strokeStyle = rgba(pal.trail, trailAlpha);
+        ctx.stroke();
+        ctx.restore();
+
+        state.energy = motion / Math.max(1, batch * steps);
+        state.avgX = sampleX / Math.max(1, samples);
+        state.avgY = sampleY / Math.max(1, samples);
+      }
+
+      function drawInset(now) {
+        const w = inset.width;
+        const h = inset.height;
+        const pad = 20;
+        const plot = w - pad * 2;
+        const x = pad + (state.a / TAU) * plot;
+        const y = h - pad - (state.b / TAU) * plot;
+        paramTrail.push([x, y]);
+        if (paramTrail.length > 180) paramTrail.shift();
+
+        ictx.clearRect(0, 0, w, h);
+        ictx.fillStyle = "rgba(1, 5, 9, 0.96)";
+        ictx.fillRect(0, 0, w, h);
+
+        ictx.strokeStyle = "rgba(126, 232, 255, 0.20)";
+        ictx.lineWidth = 1;
+        for (let i = 0; i <= 4; i++) {
+          const p = pad + (plot * i) / 4;
+          ictx.beginPath();
+          ictx.moveTo(p, pad);
+          ictx.lineTo(p, h - pad);
+          ictx.moveTo(pad, p);
+          ictx.lineTo(w - pad, p);
+          ictx.stroke();
+        }
+
+        ictx.strokeStyle = "rgba(238, 249, 255, 0.58)";
+        ictx.strokeRect(pad, pad, plot, plot);
+        ictx.fillStyle = "rgba(238, 249, 255, 0.68)";
+        ictx.font = "10px ui-monospace, Menlo, monospace";
+        ictx.fillText("0", pad - 4, h - 6);
+        ictx.fillText("2pi", w - pad - 12, h - 6);
+        ictx.fillText("b", 8, pad + 8);
+        ictx.fillText("a", w - pad - 8, h - 6);
+
+        if (paramTrail.length > 1) {
+          ictx.beginPath();
+          paramTrail.forEach((p, i) => {
+            if (i === 0) ictx.moveTo(p[0], p[1]);
+            else ictx.lineTo(p[0], p[1]);
+          });
+          ictx.strokeStyle = "rgba(255, 120, 173, 0.42)";
+          ictx.lineWidth = 1.5;
+          ictx.stroke();
+        }
+
+        const pulse = 4 + Math.sin(now * 0.009) * 1.5;
+        ictx.beginPath();
+        ictx.arc(x, y, pulse + 4, 0, TAU);
+        ictx.fillStyle = "rgba(101, 220, 255, 0.16)";
+        ictx.fill();
+        ictx.beginPath();
+        ictx.arc(x, y, pulse, 0, TAU);
+        ictx.fillStyle = "rgba(130, 247, 182, 0.96)";
+        ictx.shadowBlur = 12;
+        ictx.shadowColor = "rgba(130, 247, 182, 0.9)";
+        ictx.fill();
+        ictx.shadowBlur = 0;
+      }
+
+      function updateSweep(now) {
+        if (!state.sweep) return;
+        const t = now * 0.000085;
+        state.a = wrapTau(TAU * (0.5 + 0.5 * Math.sin(t * 1.17 + 0.4)));
+        state.b = wrapTau(TAU * (0.5 + 0.5 * Math.sin(t * 0.91 + 1.8)));
+        syncControls(false);
+      }
+
+      function updateTelemetry() {
+        el.hudA.textContent = format(state.a);
+        el.hudB.textContent = format(state.b);
+        el.hudEnergy.textContent = format(state.energy);
+        el.hudFps.textContent = state.fps ? String(Math.round(state.fps)) : "--";
+        el.stateLabel.textContent = state.inject ? "PAINTBRUSH" : state.playing ? (state.sweep ? "SWEEPING" : "RUNNING") : "PAUSED";
+        el.audioLabel.textContent = audio && audio.enabled ? "LISTENING" : "SILENT";
+      }
+
+      function animationFrame(now) {
+        requestAnimationFrame(animationFrame);
+        if (document.hidden) {
+          lastRender = now;
+          return;
+        }
+        if (now - lastRender < 1000 / 30) return;
+        const frameStart = performance.now();
+        lastRender = now;
+        updateSweep(now);
+        if (state.playing) {
+          fadeField();
+          drawAttractor();
+        }
+        drawInset(now);
+        updateAudio();
+        const frameCost = performance.now() - frameStart;
+        if (frameCost > 30 && dynamicBatch > 420) {
+          dynamicBatch *= 0.86;
+        } else if (frameCost < 12 && dynamicBatch < state.particles) {
+          dynamicBatch *= 1.05;
+        }
+
+        fpsFrames++;
+        if (now - fpsMark > 500) {
+          state.fps = (fpsFrames * 1000) / (now - fpsMark);
+          fpsFrames = 0;
+          fpsMark = now;
+          updateTelemetry();
+          if (state.fps < 10 && state.playing && state.glow > 0 && !perfGuardOpen && now > perfGuardCooldownUntil) {
+            clampGlowForSafety(state.glow, state.fps, "FPS dropped below 10 while glow was active. The console clamped glow, muted audio, and protected the render loop.");
+          }
+        }
+      }
+
+      function makeAudio() {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ac = new AudioContext();
+        const filter = ac.createBiquadFilter();
+        const master = ac.createGain();
+        const delay = ac.createDelay(1.2);
+        const feedback = ac.createGain();
+        const wet = ac.createGain();
+        const voices = [];
+
+        filter.type = "lowpass";
+        filter.frequency.value = state.filter;
+        filter.Q.value = 0.8;
+        delay.delayTime.value = 0.22;
+        feedback.gain.value = 0.28;
+        wet.gain.value = 0.18;
+        master.gain.value = 0;
+
+        filter.connect(master);
+        filter.connect(delay);
+        delay.connect(feedback);
+        feedback.connect(delay);
+        delay.connect(wet);
+        wet.connect(master);
+        master.connect(ac.destination);
+
+        for (let i = 0; i < 10; i++) {
+          const osc = ac.createOscillator();
+          const gain = ac.createGain();
+          const pan = ac.createStereoPanner();
+          osc.type = i % 3 === 0 ? "triangle" : "sine";
+          osc.frequency.value = 120 + i * 38;
+          gain.gain.value = 0.0001;
+          osc.connect(gain);
+          gain.connect(pan);
+          pan.connect(filter);
+          osc.start();
+          voices.push({ osc, gain, pan, seed: (i * 9973) % Math.max(1, state.particles) });
+        }
+
+        return { ac, filter, master, voices, enabled: false };
+      }
+
+      async function toggleAudio() {
+        if (!audio) audio = makeAudio();
+        if (audio.ac.state !== "running") await audio.ac.resume();
+        audio.enabled = !audio.enabled;
+        el.soundBtn.classList.toggle("is-active", audio.enabled);
+        setIconButton(el.soundBtn, audio.enabled ? icons.speaker : icons.muted, audio.enabled ? "Mute sound" : "Enable sound");
+        el.soundBtn.dataset.tipTitle = audio.enabled ? "Mute sound" : "Enable sound";
+        el.soundBtn.dataset.tipBody = audio.enabled
+          ? "Silences the synthesizer while the visual field keeps running."
+          : "Starts browser audio after your click. The tone follows particle motion, density, and parameter changes.";
+        setStatus(audio.enabled ? "Audio engine online" : "Audio muted");
+        updateTelemetry();
+      }
+
+      function updateAudio() {
+        if (!audio) return;
+        const t = audio.ac.currentTime;
+        const targetGain = audio.enabled ? state.volume * Math.min(1, 0.18 + state.energy * state.sensitivity) : 0;
+        audio.master.gain.setTargetAtTime(targetGain, t, 0.06);
+        audio.filter.frequency.setTargetAtTime(state.filter + Math.abs(state.avgY) * 2600, t, 0.08);
+        const base = 72 + state.a * 18;
+        const spread = 160 + state.b * 42;
+
+        audio.voices.forEach((voice, i) => {
+          const idx = (voice.seed + i * 137) % Math.max(1, state.particles);
+          const x = xs[idx] || 0;
+          const y = ys[idx] || 0;
+          const harmonic = 1 + (i % 5) * 0.375;
+          const freq = Math.max(38, base + (x + 1) * spread * harmonic + state.energy * 80);
+          voice.osc.frequency.setTargetAtTime(freq, t, 0.07);
+          voice.pan.pan.setTargetAtTime(Math.max(-0.92, Math.min(0.92, x)), t, 0.09);
+          voice.gain.gain.setTargetAtTime(0.018 + Math.abs(y) * 0.012, t, 0.08);
+        });
+      }
+
+      function syncControls(save = true) {
+        el.aRange.value = state.a;
+        el.bRange.value = state.b;
+        el.stepsRange.value = state.steps;
+        el.particlesRange.value = state.particles;
+        el.fadeRange.value = state.fade;
+        el.glowRange.value = state.glow;
+        el.volumeRange.value = state.volume;
+        el.senseRange.value = state.sensitivity;
+        el.filterRange.value = state.filter;
+        el.paletteSelect.value = state.palette;
+
+        el.aOut.textContent = format(state.a);
+        el.bOut.textContent = format(state.b);
+        el.stepsOut.textContent = `${state.steps}x`;
+        el.particlesOut.textContent = `${Math.round(state.particles / 1000)}k`;
+        el.fadeOut.textContent = format(state.fade);
+        el.glowOut.textContent = state.glow > SAFE_GLOW_MAX ? `${state.glow}!` : String(state.glow);
+        el.volumeOut.textContent = format(state.volume, 2);
+        el.senseOut.textContent = format(state.sensitivity, 2);
+        el.filterOut.textContent = String(Math.round(state.filter));
+
+        el.playBtn.classList.toggle("is-active", state.playing);
+        setIconButton(el.playBtn, state.playing ? icons.pause : icons.play, state.playing ? "Pause field" : "Run field");
+        el.playBtn.dataset.tipTitle = state.playing ? "Pause field" : "Run field";
+        el.playBtn.dataset.tipBody = state.playing
+          ? "Stops the animation clock. The current attractor stays on screen."
+          : "Restarts the animation from the current a,b coordinate.";
+        el.soundBtn.classList.toggle("is-active", !!(audio && audio.enabled));
+        setIconButton(el.soundBtn, audio && audio.enabled ? icons.speaker : icons.muted, audio && audio.enabled ? "Mute sound" : "Enable sound");
+        el.soundBtn.dataset.tipTitle = audio && audio.enabled ? "Mute sound" : "Enable sound";
+        el.soundBtn.dataset.tipBody = audio && audio.enabled
+          ? "Silences the synthesizer while the visual field keeps running."
+          : "Starts browser audio after your click. The tone follows particle motion, density, and parameter changes.";
+        el.sweepBtn.classList.toggle("is-active", state.sweep);
+        el.injectBtn.classList.toggle("is-active", state.inject);
+        updatePaintMode();
+        updateTelemetry();
+        if (save) saveConfig();
+      }
+
+      function setParameterFromInput(key, value) {
+        state[key] = Number(value);
+        state.sweep = false;
+        paramTrail.length = 0;
+        syncControls();
+      }
+
+      function buildPresets() {
+        el.presetCount.textContent = `${presets.length} sampled`;
+        presets.forEach(([name, a, b]) => {
+          const button = document.createElement("button");
+          const label = document.createElement("span");
+          const coords = document.createElement("code");
+          label.textContent = name;
+          coords.textContent = `a=${a.toFixed(3)}  b=${b.toFixed(3)}`;
+          button.append(label, coords);
+          button.addEventListener("click", () => {
+            state.a = a;
+            state.b = b;
+            state.sweep = false;
+            paramTrail.length = 0;
+            clearField();
+            syncControls();
+            setStatus(`Preset: ${name}`);
+          });
+          el.presetGrid.append(button);
+        });
+      }
+
+      function randomize() {
+        state.a = Math.random() * TAU;
+        state.b = Math.random() * TAU;
+        state.sweep = false;
+        paramTrail.length = 0;
+        syncControls();
+        setStatus("Randomized parameter coordinate");
+      }
+
+      function resetConsole() {
+        state.playing = false;
+        state.sweep = false;
+        state.inject = false;
+        state.glow = 0;
+        glowCaution = false;
+        hidePerfModal();
+        pointerDown = false;
+        paramTrail.length = 0;
+        if (audio) {
+          audio.enabled = false;
+          audio.master.gain.setTargetAtTime(0, audio.ac.currentTime, 0.04);
+        }
+        resetParticles();
+        syncControls();
+        setStatus("Console reset: paused, audio off, particles reseeded");
+      }
+
+      function exportPng() {
+        const link = document.createElement("a");
+        link.download = `kelvin-conradi-${Date.now()}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+        setStatus("Frame exported");
+      }
+
+      async function copyNote() {
+        const note = [
+          "Hi Simone,",
+          "",
+          "I made a small Kelvin Console for your 2D chaotic map: it lets the attractor be steered in real time across a,b in [0,2pi], with a parameter-space inset, particle trails, presets, and browser-native sonification.",
+          "",
+          `Current local artifact: ${location.href}`,
+          "",
+          "The system:",
+          "x[n+1] = sin(x[n]^2 - y[n]^2 + a)",
+          "y[n+1] = cos(2*x[n]*y[n] + b)",
+          "",
+          "It is meant to be a playable instrument for watching and listening to the full map, not just a rendered clip."
+        ].join("\n");
+
+        try {
+          await navigator.clipboard.writeText(note);
+          showToast("Share note copied");
+          setStatus("Share note copied");
+        } catch (error) {
+          showToast("Clipboard unavailable. Note printed in console.");
+          console.log(note);
+        }
+      }
+
+      function wireControls() {
+        el.playBtn.addEventListener("click", () => {
+          state.playing = !state.playing;
+          syncControls(false);
+        });
+        el.soundBtn.addEventListener("click", toggleAudio);
+        el.resetBtn.addEventListener("click", resetConsole);
+        el.randomBtn.addEventListener("click", randomize);
+        el.sweepBtn.addEventListener("click", () => {
+          state.sweep = !state.sweep;
+          paramTrail.length = 0;
+          setStatus(state.sweep ? "Sweep on: a and b are moving through parameter space" : "Sweep off: manual parameter control");
+          syncControls();
+        });
+        el.injectBtn.addEventListener("click", () => {
+          state.inject = !state.inject;
+          if (state.inject) state.sweep = false;
+          setStatus(state.inject ? "Paintbrush on: drag the field to seed particles" : "Paintbrush off");
+          syncControls();
+        });
+        el.aRange.addEventListener("input", (event) => setParameterFromInput("a", event.target.value));
+        el.bRange.addEventListener("input", (event) => setParameterFromInput("b", event.target.value));
+        el.stepsRange.addEventListener("input", (event) => {
+          state.steps = Number(event.target.value);
+          syncControls();
+        });
+        el.particlesRange.addEventListener("input", (event) => {
+          state.particles = Number(event.target.value);
+          el.particlesOut.textContent = `${Math.round(state.particles / 1000)}k`;
+        });
+        el.particlesRange.addEventListener("change", () => {
+          resetParticles();
+          syncControls();
+          setStatus("Particle buffer rebuilt");
+        });
+        el.fadeRange.addEventListener("input", (event) => {
+          state.fade = Number(event.target.value);
+          syncControls();
+        });
+        el.glowRange.addEventListener("input", (event) => {
+          const requestedGlow = Math.min(CAUTION_GLOW_MAX, Number(event.target.value) || 0);
+          if (requestedGlow > SAFE_GLOW_MAX && !glowCaution) {
+            clampGlowForSafety(requestedGlow, state.fps, "Glow above 2 enters caution mode. The live renderer clamped it before it could stall; proceed only for a paused still or PNG.");
+            return;
+          }
+          state.glow = requestedGlow;
+          if (requestedGlow <= SAFE_GLOW_MAX) glowCaution = false;
+          syncControls();
+        });
+        el.volumeRange.addEventListener("input", (event) => {
+          state.volume = Number(event.target.value);
+          syncControls();
+        });
+        el.senseRange.addEventListener("input", (event) => {
+          state.sensitivity = Number(event.target.value);
+          syncControls();
+        });
+        el.filterRange.addEventListener("input", (event) => {
+          state.filter = Number(event.target.value);
+          syncControls();
+        });
+        el.paletteSelect.addEventListener("change", (event) => {
+          state.palette = event.target.value;
+          clearField();
+          syncControls();
+        });
+        el.copyBtn.addEventListener("click", copyNote);
+        el.exportBtn.addEventListener("click", exportPng);
+        el.clearBtn.addEventListener("click", clearField);
+        el.perfRevertBtn.addEventListener("click", revertSafeGlow);
+        el.perfProceedBtn.addEventListener("click", proceedWithGlow);
+
+        document.querySelectorAll("[data-tip-body]").forEach((target) => {
+          target.addEventListener("pointerenter", () => showTip(target));
+          target.addEventListener("pointermove", () => placeTip(target));
+          target.addEventListener("pointerleave", hideTip);
+          target.addEventListener("focus", () => showTip(target));
+          target.addEventListener("blur", hideTip);
+        });
+
+        canvas.addEventListener("pointerdown", (event) => {
+          if (!state.inject) return;
+          pointerDown = true;
+          canvas.setPointerCapture(event.pointerId);
+          updateBrushCursor(event);
+          injectAt(event.clientX, event.clientY, 1300);
+        });
+        canvas.addEventListener("pointermove", (event) => {
+          if (!state.inject) return;
+          updateBrushCursor(event);
+          if (pointerDown) injectAt(event.clientX, event.clientY, 280);
+        });
+        canvas.addEventListener("pointerup", () => {
+          pointerDown = false;
+          el.brushCursor.classList.remove("painting");
+        });
+        canvas.addEventListener("pointerenter", (event) => {
+          updateBrushCursor(event);
+        });
+        canvas.addEventListener("pointerleave", () => {
+          pointerDown = false;
+          el.brushCursor.classList.remove("show", "painting");
+        });
+
+        window.addEventListener("keydown", (event) => {
+          if (event.target && ["INPUT", "SELECT", "BUTTON"].includes(event.target.tagName)) return;
+          if (event.key === " ") {
+            event.preventDefault();
+            state.playing = !state.playing;
+          } else if (event.key.toLowerCase() === "r") {
+            resetParticles();
+          } else if (event.key === "ArrowRight") {
+            state.a = wrapTau(state.a + 0.025);
+          } else if (event.key === "ArrowLeft") {
+            state.a = wrapTau(state.a - 0.025);
+          } else if (event.key === "ArrowUp") {
+            state.b = wrapTau(state.b + 0.025);
+          } else if (event.key === "ArrowDown") {
+            state.b = wrapTau(state.b - 0.025);
+          }
+          state.sweep = false;
+          syncControls();
+        });
+
+        window.addEventListener("resize", resize);
+      }
+
+      loadConfig();
+      buildPresets();
+      wireControls();
+      resize();
+      resetParticles();
+      syncControls(false);
+      requestAnimationFrame(animationFrame);
+    })();
+  </script>
+</body>
+</html>

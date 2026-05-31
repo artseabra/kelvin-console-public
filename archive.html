@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="archive-mode" content="public-curated">
+  <title>Ifthis Archive // Public Kelvin Slice</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #05070b;
+      --panel: rgba(12, 16, 22, 0.82);
+      --panel-2: rgba(255,255,255,0.045);
+      --line: rgba(255,255,255,0.11);
+      --muted: #8f9bad;
+      --text: #f4f8ff;
+      --cyan: #37ecff;
+      --magenta: #ff4fe1;
+      --amber: #ffbf52;
+      --green: #81f5a8;
+      --violet: #9c7cff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-size: 16px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 8% 5%, rgba(55,236,255,0.14), transparent 30rem),
+        radial-gradient(circle at 84% 2%, rgba(255,79,225,0.10), transparent 32rem),
+        linear-gradient(180deg, #070910 0%, var(--bg) 60%);
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { color: white; }
+    .info-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 13px;
+      height: 13px;
+      margin-left: 5px;
+      padding: 0;
+      border: 1px solid transparent;
+      border-radius: 50%;
+      color: var(--muted);
+      background: transparent;
+      font: 700 9px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      cursor: help;
+      opacity: 0.48;
+      vertical-align: middle;
+    }
+    .info-trigger:hover,
+    .info-trigger:focus-visible {
+      color: var(--cyan);
+      background: rgba(55,236,255,0.055);
+      border-color: rgba(55,236,255,0.28);
+      outline: none;
+      opacity: 1;
+      box-shadow: none;
+    }
+    .gateway, .policy div, .artifact-card, .note-card { position: relative; }
+    .gateway > .info-trigger,
+    .card-topline > .info-trigger {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      margin: 0;
+    }
+    .icon, .token-icon, .tile-icon, .axis-icon, .chip-icon, .card-icon, .note-icon, .button-icon, .gateway-mark {
+      flex: 0 0 auto;
+      display: block;
+      overflow: visible;
+    }
+    .button-icon { width: 16px; height: 16px; }
+    header {
+      min-height: 0;
+      display: grid;
+      align-items: end;
+      padding: 42px clamp(22px, 5vw, 72px) 32px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero {
+      width: min(1180px, 100%);
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      gap: 36px;
+      align-items: center;
+    }
+    .eyebrow, .card-topline {
+      color: var(--cyan);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    h1 {
+      margin: 10px 0 14px;
+      max-width: 680px;
+      font-size: 48px;
+      font-weight: 680;
+      line-height: 1.08;
+    }
+    .hero p {
+      margin: 0;
+      color: #bac6d8;
+      max-width: 650px;
+      font-size: 16px;
+      line-height: 1.55;
+    }
+    .node-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .node-token {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-width: 92px;
+      min-height: 44px;
+      padding: 9px 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      color: #dcecff;
+      background: rgba(255,255,255,0.045);
+      box-shadow: inset 0 0 22px rgba(55,236,255,0.04);
+    }
+    .token-icon { width: 18px; height: 18px; color: var(--cyan); }
+    .node-token span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .gateway {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 18px 50px rgba(0,0,0,0.28);
+      backdrop-filter: blur(16px);
+    }
+    .gateway-icon {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255,191,82,0.30);
+      border-radius: 8px;
+      color: var(--amber);
+      background: rgba(255,191,82,0.09);
+    }
+    .gateway-mark { width: 24px; height: 24px; }
+    .gateway strong { color: white; font-size: 15px; font-weight: 700; }
+    .gateway span { color: var(--muted); line-height: 1.45; font-size: 14px; }
+    .gateway a, .link-row a, .infra-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      width: fit-content;
+      border: 1px solid rgba(55,236,255,0.34);
+      border-radius: 8px;
+      padding: 7px 11px;
+      color: white;
+      background: rgba(55,236,255,0.10);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    main { padding: 34px clamp(18px, 3vw, 48px) 80px; }
+    section { max-width: 1440px; margin: 0 auto 30px; }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 18px;
+      margin-bottom: 14px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .section-head p { margin: 0; color: var(--muted); max-width: 560px; line-height: 1.45; font-size: 15px; }
+    .panel, .artifact-card, .note-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 16px 46px rgba(0,0,0,0.22);
+      backdrop-filter: blur(16px);
+    }
+    .panel { padding: 16px; overflow: hidden; }
+    .policy {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .policy div {
+      min-height: 132px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.065), rgba(255,255,255,0.025)),
+        rgba(0,0,0,0.18);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+    }
+    .tile-icon {
+      width: 24px;
+      height: 24px;
+      color: var(--amber);
+      margin-bottom: 14px;
+    }
+    .policy b { display: block; color: white; margin-bottom: 7px; font-size: 14px; font-weight: 700; }
+    .policy span { color: #c1ccda; font-size: 13px; line-height: 1.4; }
+    .matrix-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 0.42fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .matrix-wrap { overflow: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; }
+    .matrix { border-collapse: collapse; min-width: 820px; width: 100%; background: rgba(0,0,0,0.22); }
+    .matrix th, .matrix td { padding: 0; border: 1px solid rgba(255,255,255,0.07); text-align: center; }
+    .matrix thead th {
+      height: 64px;
+      padding: 8px;
+      color: var(--muted);
+      background: #0c1119;
+      font-size: 10px;
+    }
+    .matrix .row-head {
+      width: 124px;
+      padding: 9px;
+      color: var(--muted);
+      background: #0c1119;
+      font-size: 10px;
+    }
+    .axis-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-width: 56px;
+      color: #dce9f9;
+    }
+    .axis-label.row { justify-content: flex-start; min-width: 104px; }
+    .axis-icon { width: 17px; height: 17px; color: var(--cyan); }
+    .axis-label span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .matrix-cell {
+      width: 64px;
+      height: 48px;
+      border: 0;
+      cursor: pointer;
+      color: white;
+      background: rgba(255,255,255,0.035);
+    }
+    .matrix-cell span { display: inline-block; font-size: 14px; transform: scale(0.86); }
+    .matrix-cell.light { color: rgba(143,155,173,0.72); }
+    .matrix-cell.medium { color: var(--cyan); background: rgba(55,236,255,0.10); }
+    .matrix-cell.strong { color: var(--magenta); background: rgba(255,79,225,0.13); }
+    .matrix-cell.self { color: var(--amber); background: rgba(255,191,82,0.13); }
+    .matrix-cell:hover { outline: 2px solid white; outline-offset: -2px; }
+    #cell-detail {
+      min-height: 100%;
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      padding: 18px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.22);
+    }
+    #cell-detail b { color: white; }
+    #cell-detail p { margin: 4px 0 0; color: #bac6d8; line-height: 1.45; font-size: 15px; }
+    .resonance {
+      width: fit-content;
+      border: 1px solid rgba(129,245,168,0.34);
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .presence {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .presence span, .pill-row span {
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: #d9e4f2;
+      background: rgba(255,255,255,0.045);
+      font-size: 13px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .presence em, .pill-row em {
+      font-style: normal;
+      white-space: nowrap;
+    }
+    .chip-icon { width: 15px; height: 15px; color: var(--cyan); }
+    .cards, .notes {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .artifact-card, .note-card { padding: 18px; min-height: 196px; }
+    .node-mark {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 16px;
+      border: 1px solid rgba(55,236,255,0.24);
+      border-radius: 8px;
+      color: var(--cyan);
+      background: rgba(55,236,255,0.08);
+    }
+    .card-icon { width: 24px; height: 24px; }
+    .card-topline { display: flex; justify-content: space-between; gap: 12px; color: var(--magenta); font-size: 10px; font-weight: 700; }
+    .artifact-card h3, .note-card h3 { margin: 12px 0 8px; font-size: 19px; font-weight: 700; line-height: 1.25; }
+    .artifact-card p, .note-card p { color: #b9c4d4; line-height: 1.45; font-size: 14px; }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+    .link-row { margin-top: 14px; }
+    .note-card {
+      min-height: 154px;
+      display: grid;
+      align-content: space-between;
+    }
+    .note-icon { width: 24px; height: 24px; color: var(--green); }
+    .note-card span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .archive-tooltip {
+      position: fixed;
+      z-index: 9999;
+      top: 0;
+      left: 0;
+      width: min(340px, calc(100vw - 36px));
+      pointer-events: none;
+      opacity: 0;
+      transform: translate3d(0, 4px, 0) scale(0.97);
+      transition: opacity 160ms ease, transform 160ms ease;
+      border-radius: 8px;
+      background: rgba(3, 7, 12, 0.95);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 22px 70px rgba(0,0,0,0.68), 0 0 0 1px rgba(55,236,255,0.18);
+      overflow: hidden;
+      backdrop-filter: blur(18px);
+    }
+    .archive-tooltip[data-open="true"] {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    .archive-tooltip h4 {
+      margin: 0;
+      padding: 8px 10px;
+      color: var(--cyan);
+      background: rgba(55,236,255,0.10);
+      border-bottom: 1px solid rgba(55,236,255,0.22);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .archive-tooltip p {
+      margin: 0;
+      padding: 10px;
+      color: #cbd5e1;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    footer { color: var(--muted); max-width: 1440px; margin: 0 auto; padding: 28px clamp(14px, 3vw, 48px) 70px; }
+    @media (max-width: 820px) {
+      header { min-height: auto; }
+      h1 { font-size: 38px; }
+      h2 { font-size: 27px; }
+      .hero, .matrix-layout, .cards, .notes { grid-template-columns: 1fr; }
+      .policy { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .section-head { display: block; }
+      .section-head p { margin-top: 8px; }
+      .matrix-cell { width: 56px; height: 44px; }
+    }
+    @media (max-width: 620px) {
+      h1 { font-size: 34px; }
+      header { padding: 28px 18px 24px; }
+      main { padding: 24px 14px 64px; }
+      .policy { grid-template-columns: 1fr; }
+      .node-token { min-width: 88px; min-height: 42px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="hero">
+      <div>
+        <div class="eyebrow">Ifthis Archive · Public Kelvin Slice</div>
+        <h1>Kelvin Console Archive</h1>
+        <p>A public slice of a larger working archive. The grid is a curated signal patch-bay for the public Ærr frame.</p>
+        <div class="node-strip"><div class="node-token"><svg class="token-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v8.2"/><path d="M9.5 6.5a2.5 2.5 0 0 1 5 0v7a4.6 4.6 0 1 1-5 0v-7Z"/><path d="M12 14v3"/></svg><span>Node 01</span></div><div class="node-token"><svg class="token-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.4"/><path d="M21 12c0 1.66-4.03 3-9 3s-9-1.34-9-3 4.03-3 9-3 9 1.34 9 3Z"/><path d="M12 3c1.66 0 3 4.03 3 9s-1.34 9-3 9-3-4.03-3-9 1.34-9 3-9Z"/></svg><span>Node 02</span></div><div class="node-token"><svg class="token-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h5a4 4 0 0 1 0 8H8a3 3 0 0 0 0 6h11"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="20" r="2"/></svg><span>Node 03</span></div><div class="node-token"><svg class="token-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z"/><path d="m9 12 2 2 4-5"/></svg><span>Node 04</span></div><div class="node-token"><svg class="token-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="9" y="14" width="6" height="6" rx="1.5"/></svg><span>Node 05</span></div><div class="node-token"><svg class="token-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H7a3 3 0 0 0-3 3V5.5Z"/><path d="M4 19a3 3 0 0 1 3-3h13"/><path d="M9 7h6"/></svg><span>Node 06</span></div></div>
+      </div>
+      <aside class="gateway">
+        <button type="button" class="info-trigger" aria-label="Paper gateway info" data-tip-title="Paper gateway" data-tip-body="The public archive is designed to point outward to the canonical paper rather than expose private source history.">i</button>
+        <div class="gateway-icon"><svg class="gateway-mark" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H7a3 3 0 0 0-3 3V5.5Z"/><path d="M4 19a3 3 0 0 1 3-3h13"/><path d="M9 7h6"/></svg></div>
+        <strong>The destination is the paper.</strong>
+        <span>Public orientation without private source history.</span>
+        <a href="https://www.academia.edu/167778937/The_%C3%86rr_Trinity_A_Cost_of_Inquiry_Law_at_Three_Orders" target="_blank" rel="noreferrer"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H7a3 3 0 0 0-3 3V5.5Z"/><path d="M4 19a3 3 0 0 1 3-3h13"/><path d="M9 7h6"/></svg><span>Read The Ærr Trinity</span></a>
+      </aside>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <div class="section-head">
+        <h2>Public Mode</h2>
+        <p>Public signal. Private workbench withheld.</p>
+      </div>
+      <div class="policy"><div><svg class="tile-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M7 12h10"/><path d="M10 19h4"/><path d="M8 5l4 7 4-7"/></svg><b>Curated Slice <button type="button" class="info-trigger" aria-label="Curated Slice info" data-tip-title="Curated Slice" data-tip-body="The public feed is hand-curated and intentionally non-exhaustive.">i</button></b><span>Public-facing nodes only.</span></div><div><svg class="tile-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v2"/></svg><b>Source Closed <button type="button" class="info-trigger" aria-label="Source Closed info" data-tip-title="Source Closed" data-tip-body="The deployment ships this page and the public manifest, not the underlying console source files.">i</button></b><span>Internal artifacts are not served.</span></div><div><svg class="tile-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6Z"/><circle cx="12" cy="12" r="2.5"/><path d="m4 20 16-16"/></svg><b>Telemetry Veiled <button type="button" class="info-trigger" aria-label="Telemetry Veiled info" data-tip-title="Telemetry Veiled" data-tip-body="Quantity-level telemetry and raw relationship readings are stripped from public mode.">i</button></b><span>Velocity and scale signals stay private.</span></div><div><svg class="tile-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V8l7-4 7 4v12"/><path d="M9 20v-7h6v7"/><path d="M10 9h4"/></svg><b>Paper Gateway <button type="button" class="info-trigger" aria-label="Paper Gateway info" data-tip-title="Paper Gateway" data-tip-body="The primary public call is the research paper, with infrastructure linked outward as a public repository.">i</button></b><span>The archive leads to the Ærr frame.</span></div></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>N-by-N Patch-Bay</h2>
+        <p>Icon cells reveal public resonance only.</p>
+      </div>
+      <div class="panel matrix-layout">
+        <div class="matrix-wrap"><table class="matrix"><thead><tr><th></th><th><div class="axis-label"><svg class="axis-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v8.2"/><path d="M9.5 6.5a2.5 2.5 0 0 1 5 0v7a4.6 4.6 0 1 1-5 0v-7Z"/><path d="M12 14v3"/></svg><span>01</span></div></th><th><div class="axis-label"><svg class="axis-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.4"/><path d="M21 12c0 1.66-4.03 3-9 3s-9-1.34-9-3 4.03-3 9-3 9 1.34 9 3Z"/><path d="M12 3c1.66 0 3 4.03 3 9s-1.34 9-3 9-3-4.03-3-9 1.34-9 3-9Z"/></svg><span>02</span></div></th><th><div class="axis-label"><svg class="axis-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h5a4 4 0 0 1 0 8H8a3 3 0 0 0 0 6h11"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="20" r="2"/></svg><span>03</span></div></th><th><div class="axis-label"><svg class="axis-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z"/><path d="m9 12 2 2 4-5"/></svg><span>04</span></div></th><th><div class="axis-label"><svg class="axis-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="9" y="14" width="6" height="6" rx="1.5"/></svg><span>05</span></div></th><th><div class="axis-label"><svg class="axis-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H7a3 3 0 0 0-3 3V5.5Z"/><path d="M4 19a3 3 0 0 1 3-3h13"/><path d="M9 7h6"/></svg><span>06</span></div></th></tr></thead><tbody><tr><th class="row-head"><div class="axis-label row"><svg class="axis-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v8.2"/><path d="M9.5 6.5a2.5 2.5 0 0 1 5 0v7a4.6 4.6 0 1 1-5 0v-7Z"/><path d="M12 14v3"/></svg><span>Node 01</span></div></th><td><button class="matrix-cell self" data-a="0" data-b="0" aria-label="Node 01 to Node 01"><span>◆</span></button></td><td><button class="matrix-cell light" data-a="0" data-b="1" aria-label="Node 01 to Node 02"><span>●</span></button></td><td><button class="matrix-cell strong" data-a="0" data-b="2" aria-label="Node 01 to Node 03"><span>●</span></button></td><td><button class="matrix-cell medium" data-a="0" data-b="3" aria-label="Node 01 to Node 04"><span>●</span></button></td><td><button class="matrix-cell medium" data-a="0" data-b="4" aria-label="Node 01 to Node 05"><span>●</span></button></td><td><button class="matrix-cell medium" data-a="0" data-b="5" aria-label="Node 01 to Node 06"><span>●</span></button></td></tr><tr><th class="row-head"><div class="axis-label row"><svg class="axis-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.4"/><path d="M21 12c0 1.66-4.03 3-9 3s-9-1.34-9-3 4.03-3 9-3 9 1.34 9 3Z"/><path d="M12 3c1.66 0 3 4.03 3 9s-1.34 9-3 9-3-4.03-3-9 1.34-9 3-9Z"/></svg><span>Node 02</span></div></th><td><button class="matrix-cell light" data-a="1" data-b="0" aria-label="Node 02 to Node 01"><span>●</span></button></td><td><button class="matrix-cell self" data-a="1" data-b="1" aria-label="Node 02 to Node 02"><span>◆</span></button></td><td><button class="matrix-cell medium" data-a="1" data-b="2" aria-label="Node 02 to Node 03"><span>●</span></button></td><td><button class="matrix-cell strong" data-a="1" data-b="3" aria-label="Node 02 to Node 04"><span>●</span></button></td><td><button class="matrix-cell medium" data-a="1" data-b="4" aria-label="Node 02 to Node 05"><span>●</span></button></td><td><button class="matrix-cell light" data-a="1" data-b="5" aria-label="Node 02 to Node 06"><span>●</span></button></td></tr><tr><th class="row-head"><div class="axis-label row"><svg class="axis-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h5a4 4 0 0 1 0 8H8a3 3 0 0 0 0 6h11"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="20" r="2"/></svg><span>Node 03</span></div></th><td><button class="matrix-cell strong" data-a="2" data-b="0" aria-label="Node 03 to Node 01"><span>●</span></button></td><td><button class="matrix-cell medium" data-a="2" data-b="1" aria-label="Node 03 to Node 02"><span>●</span></button></td><td><button class="matrix-cell self" data-a="2" data-b="2" aria-label="Node 03 to Node 03"><span>◆</span></button></td><td><button class="matrix-cell medium" data-a="2" data-b="3" aria-label="Node 03 to Node 04"><span>●</span></button></td><td><button class="matrix-cell light" data-a="2" data-b="4" aria-label="Node 03 to Node 05"><span>●</span></button></td><td><button class="matrix-cell light" data-a="2" data-b="5" aria-label="Node 03 to Node 06"><span>●</span></button></td></tr><tr><th class="row-head"><div class="axis-label row"><svg class="axis-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z"/><path d="m9 12 2 2 4-5"/></svg><span>Node 04</span></div></th><td><button class="matrix-cell medium" data-a="3" data-b="0" aria-label="Node 04 to Node 01"><span>●</span></button></td><td><button class="matrix-cell strong" data-a="3" data-b="1" aria-label="Node 04 to Node 02"><span>●</span></button></td><td><button class="matrix-cell medium" data-a="3" data-b="2" aria-label="Node 04 to Node 03"><span>●</span></button></td><td><button class="matrix-cell self" data-a="3" data-b="3" aria-label="Node 04 to Node 04"><span>◆</span></button></td><td><button class="matrix-cell medium" data-a="3" data-b="4" aria-label="Node 04 to Node 05"><span>●</span></button></td><td><button class="matrix-cell light" data-a="3" data-b="5" aria-label="Node 04 to Node 06"><span>●</span></button></td></tr><tr><th class="row-head"><div class="axis-label row"><svg class="axis-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="9" y="14" width="6" height="6" rx="1.5"/></svg><span>Node 05</span></div></th><td><button class="matrix-cell medium" data-a="4" data-b="0" aria-label="Node 05 to Node 01"><span>●</span></button></td><td><button class="matrix-cell medium" data-a="4" data-b="1" aria-label="Node 05 to Node 02"><span>●</span></button></td><td><button class="matrix-cell light" data-a="4" data-b="2" aria-label="Node 05 to Node 03"><span>●</span></button></td><td><button class="matrix-cell medium" data-a="4" data-b="3" aria-label="Node 05 to Node 04"><span>●</span></button></td><td><button class="matrix-cell self" data-a="4" data-b="4" aria-label="Node 05 to Node 05"><span>◆</span></button></td><td><button class="matrix-cell medium" data-a="4" data-b="5" aria-label="Node 05 to Node 06"><span>●</span></button></td></tr><tr><th class="row-head"><div class="axis-label row"><svg class="axis-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H7a3 3 0 0 0-3 3V5.5Z"/><path d="M4 19a3 3 0 0 1 3-3h13"/><path d="M9 7h6"/></svg><span>Node 06</span></div></th><td><button class="matrix-cell medium" data-a="5" data-b="0" aria-label="Node 06 to Node 01"><span>●</span></button></td><td><button class="matrix-cell light" data-a="5" data-b="1" aria-label="Node 06 to Node 02"><span>●</span></button></td><td><button class="matrix-cell light" data-a="5" data-b="2" aria-label="Node 06 to Node 03"><span>●</span></button></td><td><button class="matrix-cell light" data-a="5" data-b="3" aria-label="Node 06 to Node 04"><span>●</span></button></td><td><button class="matrix-cell medium" data-a="5" data-b="4" aria-label="Node 06 to Node 05"><span>●</span></button></td><td><button class="matrix-cell self" data-a="5" data-b="5" aria-label="Node 06 to Node 06"><span>◆</span></button></td></tr></tbody></table></div>
+        <div id="cell-detail">
+          <div><b>Select a public node pair</b><p>The detail panel will show titles, public families, shared presence chips, and a category-level resonance label.</p></div>
+          <div class="resonance">Waiting</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Concept Presence</h2>
+        <p>A concept inventory without counts.</p>
+      </div>
+      <div class="panel"><div class="presence"><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z"/><path d="m9 12 2 2 4-5"/></svg><em>Coherence</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v8.2"/><path d="M9.5 6.5a2.5 2.5 0 0 1 5 0v7a4.6 4.6 0 1 1-5 0v-7Z"/><path d="M12 14v3"/></svg><em>Cost</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="9" y="14" width="6" height="6" rx="1.5"/></svg><em>Domain Instance</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h3"/><path d="M8 13h8"/><circle cx="16" cy="9" r="1"/></svg><em>Interface</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v2"/></svg><em>Machine Boundary</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.4"/><path d="M21 12c0 1.66-4.03 3-9 3s-9-1.34-9-3 4.03-3 9-3 9 1.34 9 3Z"/><path d="M12 3c1.66 0 3 4.03 3 9s-1.34 9-3 9-3-4.03-3-9 1.34-9 3-9Z"/></svg><em>Manifold</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 1 1 16 0"/><path d="m12 15 4-5"/><path d="M7 15h10"/></svg><em>Measurement</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h5a4 4 0 0 1 0 8H8a3 3 0 0 0 0 6h11"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="20" r="2"/></svg><em>Phase Space</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H7a3 3 0 0 0-3 3V5.5Z"/><path d="M4 19a3 3 0 0 1 3-3h13"/><path d="M9 7h6"/></svg><em>Publication</em></span></div></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Curated Notes</h2>
+        <p>Authored readings, kept high-level.</p>
+      </div>
+      <div class="notes">
+        <article class="note-card">
+          <svg class="note-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+          <h3>Instrument To Publication <button type="button" class="info-trigger" aria-label="Instrument To Publication info" data-tip-title="Instrument To Publication" data-tip-body="The public slice shows a movement from visual instruments toward research gateways without exposing the private route.">i</button></h3>
+          <span>Curated reading</span>
+        </article>
+        
+        <article class="note-card">
+          <svg class="note-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4Z"/><path d="M4 9h16"/><path d="M4 15h16"/><path d="M9 4v16"/><path d="M15 4v16"/></svg>
+          <h3>Adjacency, Not Roadmap <button type="button" class="info-trigger" aria-label="Adjacency, Not Roadmap info" data-tip-title="Adjacency, Not Roadmap" data-tip-body="Cells show curated public resonance. They do not reveal raw similarity scores, internal chronology, or branch velocity.">i</button></h3>
+          <span>Curated reading</span>
+        </article>
+        
+        <article class="note-card">
+          <svg class="note-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h8"/><path d="M5 12h14"/><path d="M5 16h10"/><circle cx="18" cy="8" r="1.5"/></svg>
+          <h3>Concept Inventory <button type="button" class="info-trigger" aria-label="Concept Inventory info" data-tip-title="Concept Inventory" data-tip-body="Signals are presence chips only. The portal shows what kinds of concepts exist without quantifying current research load.">i</button></h3>
+          <span>Curated reading</span>
+        </article>
+        
+        <article class="note-card">
+          <svg class="note-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h10a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2V4Z"/><path d="M9 4v16"/><path d="M12 8h3"/></svg>
+          <h3>Infrastructure Boundary <button type="button" class="info-trigger" aria-label="Infrastructure Boundary info" data-tip-title="Infrastructure Boundary" data-tip-body="Machine-readable/API work is linked as public infrastructure rather than described as private deployment internals.">i</button></h3>
+          <span>Curated reading</span>
+        </article>
+        </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>One By One</h2>
+        <p>Public abstractions, not source inventory.</p>
+      </div>
+      <div class="cards">
+    <article class="artifact-card">
+      <div class="node-mark"><svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v8.2"/><path d="M9.5 6.5a2.5 2.5 0 0 1 5 0v7a4.6 4.6 0 1 1-5 0v-7Z"/><path d="M12 14v3"/></svg></div>
+      <div class="card-topline"><span>Node 01</span><span>Public instrument surface</span><button type="button" class="info-trigger" aria-label="Node 01 info" data-tip-title="Node 01" data-tip-body="A public-facing root node for the cost, yield, and inquiry language that runs through the archive.">i</button></div>
+      <h3>Thermodynamic Interface</h3>
+      <div class="pill-row"><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v8.2"/><path d="M9.5 6.5a2.5 2.5 0 0 1 5 0v7a4.6 4.6 0 1 1-5 0v-7Z"/><path d="M12 14v3"/></svg><em>Cost</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 1 1 16 0"/><path d="m12 15 4-5"/><path d="M7 15h10"/></svg><em>Measurement</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h3"/><path d="M8 13h8"/><circle cx="16" cy="9" r="1"/></svg><em>Interface</em></span></div>
+      
+    </article>
+    
+    <article class="artifact-card">
+      <div class="node-mark"><svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.4"/><path d="M21 12c0 1.66-4.03 3-9 3s-9-1.34-9-3 4.03-3 9-3 9 1.34 9 3Z"/><path d="M12 3c1.66 0 3 4.03 3 9s-1.34 9-3 9-3-4.03-3-9 1.34-9 3-9Z"/></svg></div>
+      <div class="card-topline"><span>Node 02</span><span>Geometry surface</span><button type="button" class="info-trigger" aria-label="Node 02 info" data-tip-title="Node 02" data-tip-body="A public geometry node for basin, path, and manifold language without publishing internal prototype names.">i</button></div>
+      <h3>Attractor Surface</h3>
+      <div class="pill-row"><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h5a4 4 0 0 1 0 8H8a3 3 0 0 0 0 6h11"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="20" r="2"/></svg><em>Phase Space</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.4"/><path d="M21 12c0 1.66-4.03 3-9 3s-9-1.34-9-3 4.03-3 9-3 9 1.34 9 3Z"/><path d="M12 3c1.66 0 3 4.03 3 9s-1.34 9-3 9-3-4.03-3-9 1.34-9 3-9Z"/></svg><em>Manifold</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z"/><path d="m9 12 2 2 4-5"/></svg><em>Coherence</em></span></div>
+      
+    </article>
+    
+    <article class="artifact-card">
+      <div class="node-mark"><svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h5a4 4 0 0 1 0 8H8a3 3 0 0 0 0 6h11"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="20" r="2"/></svg></div>
+      <div class="card-topline"><span>Node 03</span><span>Archive operator</span><button type="button" class="info-trigger" aria-label="Node 03 info" data-tip-title="Node 03" data-tip-body="A navigable operator layer: not a chronology, but a way to move through public-facing conceptual adjacency.">i</button></div>
+      <h3>Phase-Space Operator</h3>
+      <div class="pill-row"><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h5a4 4 0 0 1 0 8H8a3 3 0 0 0 0 6h11"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="20" r="2"/></svg><em>Phase Space</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 1 1 16 0"/><path d="m12 15 4-5"/><path d="M7 15h10"/></svg><em>Measurement</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h3"/><path d="M8 13h8"/><circle cx="16" cy="9" r="1"/></svg><em>Interface</em></span></div>
+      
+    </article>
+    
+    <article class="artifact-card">
+      <div class="node-mark"><svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z"/><path d="m9 12 2 2 4-5"/></svg></div>
+      <div class="card-topline"><span>Node 04</span><span>Stability instrument</span><button type="button" class="info-trigger" aria-label="Node 04 info" data-tip-title="Node 04" data-tip-body="A stabilized instrument layer for public concepts of clamp, discipline, and legible state.">i</button></div>
+      <h3>Coherence Instrument</h3>
+      <div class="pill-row"><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z"/><path d="m9 12 2 2 4-5"/></svg><em>Coherence</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.4"/><path d="M21 12c0 1.66-4.03 3-9 3s-9-1.34-9-3 4.03-3 9-3 9 1.34 9 3Z"/><path d="M12 3c1.66 0 3 4.03 3 9s-1.34 9-3 9-3-4.03-3-9 1.34-9 3-9Z"/></svg><em>Manifold</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 1 1 16 0"/><path d="m12 15 4-5"/><path d="M7 15h10"/></svg><em>Measurement</em></span></div>
+      
+    </article>
+    
+    <article class="artifact-card">
+      <div class="node-mark"><svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="9" y="14" width="6" height="6" rx="1.5"/></svg></div>
+      <div class="card-topline"><span>Node 05</span><span>Applied public example</span><button type="button" class="info-trigger" aria-label="Node 05 info" data-tip-title="Node 05" data-tip-body="A public applied layer showing that the archive is not only visual; it can host concrete domain examples.">i</button></div>
+      <h3>Domain Instance</h3>
+      <div class="pill-row"><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="9" y="14" width="6" height="6" rx="1.5"/></svg><em>Domain Instance</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v8.2"/><path d="M9.5 6.5a2.5 2.5 0 0 1 5 0v7a4.6 4.6 0 1 1-5 0v-7Z"/><path d="M12 14v3"/></svg><em>Cost</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z"/><path d="m9 12 2 2 4-5"/></svg><em>Coherence</em></span></div>
+      
+    </article>
+    
+    <article class="artifact-card">
+      <div class="node-mark"><svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H7a3 3 0 0 0-3 3V5.5Z"/><path d="M4 19a3 3 0 0 1 3-3h13"/><path d="M9 7h6"/></svg></div>
+      <div class="card-topline"><span>Node 06</span><span>Publication route</span><button type="button" class="info-trigger" aria-label="Node 06 info" data-tip-title="Node 06" data-tip-body="The public destination layer: artifacts point outward to papers and repositories instead of exposing private internals.">i</button></div>
+      <h3>Paper Gateway</h3>
+      <div class="pill-row"><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H7a3 3 0 0 0-3 3V5.5Z"/><path d="M4 19a3 3 0 0 1 3-3h13"/><path d="M9 7h6"/></svg><em>Publication</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v8.2"/><path d="M9.5 6.5a2.5 2.5 0 0 1 5 0v7a4.6 4.6 0 1 1-5 0v-7Z"/><path d="M12 14v3"/></svg><em>Cost</em></span><span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v2"/></svg><em>Machine Boundary</em></span></div>
+      <div class="link-row"><a href="https://www.academia.edu/167778937/The_%C3%86rr_Trinity_A_Cost_of_Inquiry_Law_at_Three_Orders" target="_blank" rel="noreferrer"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H7a3 3 0 0 0-3 3V5.5Z"/><path d="M4 19a3 3 0 0 1 3-3h13"/><path d="M9 7h6"/></svg><span>Read The Ærr Trinity</span></a></div>
+    </article>
+    </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>MCP / Infra</h2>
+        <p>Public repository boundary.</p>
+      </div>
+      <div class="panel">
+        <a class="infra-link" href="https://github.com/artseabra/aerr-sensor" target="_blank" rel="noreferrer"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h10a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2V4Z"/><path d="M9 4v16"/><path d="M12 8h3"/></svg><span>MCP / Infra Repository</span></a>
+        <button type="button" class="info-trigger" aria-label="Public infrastructure repository info" data-tip-title="Public infrastructure repository" data-tip-body="The archive points to the public MCP/infra repository instead of documenting private deployment internals inline.">i</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Public build generated 2026-05-31 19:40. Source archive remains private; deployed public mode contains no raw console files.
+  </footer>
+
+  <script>
+    const ITEMS = [{"id": "Node 01", "icon": "thermo", "title": "Thermodynamic Interface", "family": "Public instrument surface", "description": "A public-facing root node for the cost, yield, and inquiry language that runs through the archive.", "concepts": ["Cost", "Measurement", "Interface"]}, {"id": "Node 02", "icon": "orbit", "title": "Attractor Surface", "family": "Geometry surface", "description": "A public geometry node for basin, path, and manifold language without publishing internal prototype names.", "concepts": ["Phase Space", "Manifold", "Coherence"]}, {"id": "Node 03", "icon": "route", "title": "Phase-Space Operator", "family": "Archive operator", "description": "A navigable operator layer: not a chronology, but a way to move through public-facing conceptual adjacency.", "concepts": ["Phase Space", "Measurement", "Interface"]}, {"id": "Node 04", "icon": "shield", "title": "Coherence Instrument", "family": "Stability instrument", "description": "A stabilized instrument layer for public concepts of clamp, discipline, and legible state.", "concepts": ["Coherence", "Manifold", "Measurement"]}, {"id": "Node 05", "icon": "blocks", "title": "Domain Instance", "family": "Applied public example", "description": "A public applied layer showing that the archive is not only visual; it can host concrete domain examples.", "concepts": ["Domain Instance", "Cost", "Coherence"]}, {"id": "Node 06", "icon": "book", "title": "Paper Gateway", "family": "Publication route", "description": "The public destination layer: artifacts point outward to papers and repositories instead of exposing private internals.", "concepts": ["Publication", "Cost", "Machine Boundary"], "links": [{"label": "Read The Ærr Trinity", "url": "https://www.academia.edu/167778937/The_%C3%86rr_Trinity_A_Cost_of_Inquiry_Law_at_Three_Orders"}]}];
+    const MATRIX = [[{"strength": "self", "label": "Self", "shared": ["Cost", "Interface", "Measurement"]}, {"strength": "light", "label": "Light", "shared": []}, {"strength": "strong", "label": "Strong", "shared": ["Interface", "Measurement"]}, {"strength": "medium", "label": "Medium", "shared": ["Measurement"]}, {"strength": "medium", "label": "Medium", "shared": ["Cost"]}, {"strength": "medium", "label": "Medium", "shared": ["Cost"]}], [{"strength": "light", "label": "Light", "shared": []}, {"strength": "self", "label": "Self", "shared": ["Coherence", "Manifold", "Phase Space"]}, {"strength": "medium", "label": "Medium", "shared": ["Phase Space"]}, {"strength": "strong", "label": "Strong", "shared": ["Coherence", "Manifold"]}, {"strength": "medium", "label": "Medium", "shared": ["Coherence"]}, {"strength": "light", "label": "Light", "shared": []}], [{"strength": "strong", "label": "Strong", "shared": ["Interface", "Measurement"]}, {"strength": "medium", "label": "Medium", "shared": ["Phase Space"]}, {"strength": "self", "label": "Self", "shared": ["Interface", "Measurement", "Phase Space"]}, {"strength": "medium", "label": "Medium", "shared": ["Measurement"]}, {"strength": "light", "label": "Light", "shared": []}, {"strength": "light", "label": "Light", "shared": []}], [{"strength": "medium", "label": "Medium", "shared": ["Measurement"]}, {"strength": "strong", "label": "Strong", "shared": ["Coherence", "Manifold"]}, {"strength": "medium", "label": "Medium", "shared": ["Measurement"]}, {"strength": "self", "label": "Self", "shared": ["Coherence", "Manifold", "Measurement"]}, {"strength": "medium", "label": "Medium", "shared": ["Coherence"]}, {"strength": "light", "label": "Light", "shared": []}], [{"strength": "medium", "label": "Medium", "shared": ["Cost"]}, {"strength": "medium", "label": "Medium", "shared": ["Coherence"]}, {"strength": "light", "label": "Light", "shared": []}, {"strength": "medium", "label": "Medium", "shared": ["Coherence"]}, {"strength": "self", "label": "Self", "shared": ["Coherence", "Cost", "Domain Instance"]}, {"strength": "medium", "label": "Medium", "shared": ["Cost"]}], [{"strength": "medium", "label": "Medium", "shared": ["Cost"]}, {"strength": "light", "label": "Light", "shared": []}, {"strength": "light", "label": "Light", "shared": []}, {"strength": "light", "label": "Light", "shared": []}, {"strength": "medium", "label": "Medium", "shared": ["Cost"]}, {"strength": "self", "label": "Self", "shared": ["Cost", "Machine Boundary", "Publication"]}]];
+    const detail = document.getElementById('cell-detail');
+    const tooltip = document.createElement('div');
+    tooltip.className = 'archive-tooltip';
+    const tooltipTitle = document.createElement('h4');
+    const tooltipBody = document.createElement('p');
+    tooltip.appendChild(tooltipTitle);
+    tooltip.appendChild(tooltipBody);
+    document.body.appendChild(tooltip);
+
+    let tooltipTimer = null;
+
+    const positionTooltip = (element) => {
+      const margin = 12;
+      const rect = element.getBoundingClientRect();
+      const tooltipRect = tooltip.getBoundingClientRect();
+      let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+      let top = rect.bottom + 8;
+
+      if (top + tooltipRect.height > window.innerHeight - margin) {
+        top = rect.top - tooltipRect.height - 8;
+      }
+
+      left = Math.max(margin, Math.min(left, window.innerWidth - tooltipRect.width - margin));
+      top = Math.max(margin, Math.min(top, window.innerHeight - tooltipRect.height - margin));
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    };
+
+    const openTooltip = (element, delay = 320) => {
+      clearTimeout(tooltipTimer);
+      tooltipTimer = setTimeout(() => {
+        tooltipTitle.textContent = element.dataset.tipTitle || '';
+        tooltipBody.textContent = element.dataset.tipBody || '';
+        tooltip.dataset.open = 'true';
+        requestAnimationFrame(() => positionTooltip(element));
+      }, delay);
+    };
+
+    const closeTooltip = () => {
+      clearTimeout(tooltipTimer);
+      tooltip.dataset.open = 'false';
+    };
+
+    document.querySelectorAll('.info-trigger[data-tip-title]').forEach((element) => {
+      element.addEventListener('mouseenter', () => openTooltip(element));
+      element.addEventListener('mouseleave', closeTooltip);
+      element.addEventListener('focus', () => openTooltip(element, 120));
+      element.addEventListener('blur', closeTooltip);
+      element.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeTooltip();
+      });
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeTooltip();
+    });
+    window.addEventListener('resize', closeTooltip);
+    window.addEventListener('scroll', closeTooltip, true);
+
+    document.querySelectorAll('.matrix-cell').forEach((button) => {
+      button.addEventListener('click', () => {
+        const a = Number(button.dataset.a);
+        const b = Number(button.dataset.b);
+        const cell = MATRIX[a][b];
+        const left = ITEMS[a];
+        const right = ITEMS[b];
+        const shared = cell.shared.length ? cell.shared.join(', ') : 'No shared public concept is advertised for this pair.';
+        detail.innerHTML = `
+          <div>
+            <b>${left.id} · ${left.title}</b>
+            <p>${left.family}</p>
+          </div>
+          <div>
+            <b>${right.id} · ${right.title}</b>
+            <p>${right.family}</p>
+          </div>
+          <div class="resonance">${cell.label} Resonance</div>
+          <div>
+            <b>Shared public concepts</b>
+            <p>${shared}</p>
+          </div>`;
+      });
+    });
+  </script>
+</body>
+</html>

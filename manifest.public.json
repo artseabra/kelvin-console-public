@@ -1,0 +1,393 @@
+{
+  "title": "Ifthis Archive // Public Kelvin Slice",
+  "header": "Kelvin Console Archive",
+  "dek": "A public slice of a larger working archive. The grid is a curated signal patch-bay for the public Ærr frame.",
+  "generated": "2026-05-31 19:40",
+  "mode": "public",
+  "policy": {
+    "scope": "curated_public_slice",
+    "raw_sources_included": false,
+    "raw_similarity_scores_included": false,
+    "internal_version_codes_included": false,
+    "file_metadata_included": false
+  },
+  "nodes": [
+    {
+      "id": "Node 01",
+      "icon": "thermo",
+      "title": "Thermodynamic Interface",
+      "family": "Public instrument surface",
+      "description": "A public-facing root node for the cost, yield, and inquiry language that runs through the archive.",
+      "concepts": [
+        "Cost",
+        "Measurement",
+        "Interface"
+      ]
+    },
+    {
+      "id": "Node 02",
+      "icon": "orbit",
+      "title": "Attractor Surface",
+      "family": "Geometry surface",
+      "description": "A public geometry node for basin, path, and manifold language without publishing internal prototype names.",
+      "concepts": [
+        "Phase Space",
+        "Manifold",
+        "Coherence"
+      ]
+    },
+    {
+      "id": "Node 03",
+      "icon": "route",
+      "title": "Phase-Space Operator",
+      "family": "Archive operator",
+      "description": "A navigable operator layer: not a chronology, but a way to move through public-facing conceptual adjacency.",
+      "concepts": [
+        "Phase Space",
+        "Measurement",
+        "Interface"
+      ]
+    },
+    {
+      "id": "Node 04",
+      "icon": "shield",
+      "title": "Coherence Instrument",
+      "family": "Stability instrument",
+      "description": "A stabilized instrument layer for public concepts of clamp, discipline, and legible state.",
+      "concepts": [
+        "Coherence",
+        "Manifold",
+        "Measurement"
+      ]
+    },
+    {
+      "id": "Node 05",
+      "icon": "blocks",
+      "title": "Domain Instance",
+      "family": "Applied public example",
+      "description": "A public applied layer showing that the archive is not only visual; it can host concrete domain examples.",
+      "concepts": [
+        "Domain Instance",
+        "Cost",
+        "Coherence"
+      ]
+    },
+    {
+      "id": "Node 06",
+      "icon": "book",
+      "title": "Paper Gateway",
+      "family": "Publication route",
+      "description": "The public destination layer: artifacts point outward to papers and repositories instead of exposing private internals.",
+      "concepts": [
+        "Publication",
+        "Cost",
+        "Machine Boundary"
+      ],
+      "links": [
+        {
+          "label": "Read The Ærr Trinity",
+          "url": "https://www.academia.edu/167778937/The_%C3%86rr_Trinity_A_Cost_of_Inquiry_Law_at_Three_Orders"
+        }
+      ]
+    }
+  ],
+  "concepts": [
+    "Coherence",
+    "Cost",
+    "Domain Instance",
+    "Interface",
+    "Machine Boundary",
+    "Manifold",
+    "Measurement",
+    "Phase Space",
+    "Publication"
+  ],
+  "matrix": [
+    [
+      {
+        "strength": "self",
+        "label": "Self",
+        "shared": [
+          "Cost",
+          "Interface",
+          "Measurement"
+        ]
+      },
+      {
+        "strength": "light",
+        "label": "Light",
+        "shared": []
+      },
+      {
+        "strength": "strong",
+        "label": "Strong",
+        "shared": [
+          "Interface",
+          "Measurement"
+        ]
+      },
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Measurement"
+        ]
+      },
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Cost"
+        ]
+      },
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Cost"
+        ]
+      }
+    ],
+    [
+      {
+        "strength": "light",
+        "label": "Light",
+        "shared": []
+      },
+      {
+        "strength": "self",
+        "label": "Self",
+        "shared": [
+          "Coherence",
+          "Manifold",
+          "Phase Space"
+        ]
+      },
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Phase Space"
+        ]
+      },
+      {
+        "strength": "strong",
+        "label": "Strong",
+        "shared": [
+          "Coherence",
+          "Manifold"
+        ]
+      },
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Coherence"
+        ]
+      },
+      {
+        "strength": "light",
+        "label": "Light",
+        "shared": []
+      }
+    ],
+    [
+      {
+        "strength": "strong",
+        "label": "Strong",
+        "shared": [
+          "Interface",
+          "Measurement"
+        ]
+      },
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Phase Space"
+        ]
+      },
+      {
+        "strength": "self",
+        "label": "Self",
+        "shared": [
+          "Interface",
+          "Measurement",
+          "Phase Space"
+        ]
+      },
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Measurement"
+        ]
+      },
+      {
+        "strength": "light",
+        "label": "Light",
+        "shared": []
+      },
+      {
+        "strength": "light",
+        "label": "Light",
+        "shared": []
+      }
+    ],
+    [
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Measurement"
+        ]
+      },
+      {
+        "strength": "strong",
+        "label": "Strong",
+        "shared": [
+          "Coherence",
+          "Manifold"
+        ]
+      },
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Measurement"
+        ]
+      },
+      {
+        "strength": "self",
+        "label": "Self",
+        "shared": [
+          "Coherence",
+          "Manifold",
+          "Measurement"
+        ]
+      },
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Coherence"
+        ]
+      },
+      {
+        "strength": "light",
+        "label": "Light",
+        "shared": []
+      }
+    ],
+    [
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Cost"
+        ]
+      },
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Coherence"
+        ]
+      },
+      {
+        "strength": "light",
+        "label": "Light",
+        "shared": []
+      },
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Coherence"
+        ]
+      },
+      {
+        "strength": "self",
+        "label": "Self",
+        "shared": [
+          "Coherence",
+          "Cost",
+          "Domain Instance"
+        ]
+      },
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Cost"
+        ]
+      }
+    ],
+    [
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Cost"
+        ]
+      },
+      {
+        "strength": "light",
+        "label": "Light",
+        "shared": []
+      },
+      {
+        "strength": "light",
+        "label": "Light",
+        "shared": []
+      },
+      {
+        "strength": "light",
+        "label": "Light",
+        "shared": []
+      },
+      {
+        "strength": "medium",
+        "label": "Medium",
+        "shared": [
+          "Cost"
+        ]
+      },
+      {
+        "strength": "self",
+        "label": "Self",
+        "shared": [
+          "Cost",
+          "Machine Boundary",
+          "Publication"
+        ]
+      }
+    ]
+  ],
+  "notes": [
+    {
+      "icon": "arrow",
+      "title": "Instrument To Publication",
+      "body": "The public slice shows a movement from visual instruments toward research gateways without exposing the private route."
+    },
+    {
+      "icon": "matrix",
+      "title": "Adjacency, Not Roadmap",
+      "body": "Cells show curated public resonance. They do not reveal raw similarity scores, internal chronology, or branch velocity."
+    },
+    {
+      "icon": "chips",
+      "title": "Concept Inventory",
+      "body": "Signals are presence chips only. The portal shows what kinds of concepts exist without quantifying current research load."
+    },
+    {
+      "icon": "repo",
+      "title": "Infrastructure Boundary",
+      "body": "Machine-readable/API work is linked as public infrastructure rather than described as private deployment internals."
+    }
+  ],
+  "infra": {
+    "label": "MCP / Infra Repository",
+    "url": "https://github.com/artseabra/aerr-sensor"
+  }
+}
