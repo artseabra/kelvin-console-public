@@ -363,6 +363,18 @@
       font-size: 12px;
     }
 
+    .seed-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 44px;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .seed-lock-button svg {
+      width: 17px;
+      height: 17px;
+    }
+
     .sr-only {
       position: absolute;
       width: 1px;
@@ -480,6 +492,17 @@
       border-color: rgba(255, 209, 102, 0.96);
       box-shadow: 0 0 22px rgba(255, 209, 102, 0.36), inset 0 0 22px rgba(255, 209, 102, 0.16);
       transform: translate(-50%, -50%) scale(0.82);
+    }
+
+    .paint-cursor.locked {
+      border-color: rgba(255, 209, 102, 0.98);
+      box-shadow: 0 0 26px rgba(255, 209, 102, 0.34), inset 0 0 20px rgba(255, 209, 102, 0.16);
+    }
+
+    .paint-cursor.locked::after {
+      border-color: rgba(255, 209, 102, 0.46);
+      color: rgba(255, 209, 102, 0.96);
+      content: "LOCK";
     }
 
     .preset-grid {
@@ -861,7 +884,7 @@
               <span class="sr-only">Randomize parameters</span>
             </button>
           </div>
-          <div class="split" style="margin-top:8px">
+          <div class="seed-row">
             <button id="sweepBtn" class="command-button" aria-label="Toggle parameter sweep" data-tip-title="Sweep" data-tip-body="Automatically moves a and b through the inset map so the attractor morphs over time. Touch a slider or preset to take manual control again.">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.6-6.1"></path><path d="M18 2v4h-4"></path><path d="M21 12a9 9 0 0 1-15.6 6.1"></path><path d="M6 22v-4h4"></path></svg>
               <span>Sweep</span>
@@ -869,6 +892,10 @@
             <button id="injectBtn" class="command-button" aria-label="Toggle paintbrush" data-tip-title="Paintbrush" data-tip-body="Turns the field into a seed brush. Drag on the attractor to plant fresh particles and watch how the map absorbs them.">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"></circle><path d="M12 3v3"></path><path d="M12 18v3"></path><path d="M3 12h3"></path><path d="M18 12h3"></path><circle cx="12" cy="12" r="1"></circle></svg>
               <span>Paint</span>
+            </button>
+            <button id="seedLockBtn" class="icon-button seed-lock-button" aria-label="Toggle continuous seed" data-tip-title="Continuous seed" data-tip-body="Locks a seed stream to the next point you click or drag on the field. Click another point to move the stream; unlock to stop it.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path><path d="M12 15v3"></path></svg>
+              <span class="sr-only">Continuous seed</span>
             </button>
           </div>
           </div>
@@ -1163,6 +1190,7 @@
         playing: true,
         sweep: false,
         inject: false,
+        seedLock: false,
         volume: 0.22,
         sensitivity: 1.1,
         filter: 2400,
@@ -1183,9 +1211,12 @@
       let xs = new Float32Array(state.particles);
       let ys = new Float32Array(state.particles);
       let feedAge = new Float32Array(state.particles);
+      let cameraBuffer = document.createElement("canvas");
+      let cameraBufferCtx = cameraBuffer.getContext("2d");
       let view = { w: 0, h: 0, baseCx: 0, baseCy: 0, baseScale: 1, cx: 0, cy: 0, scale: 1 };
       let viewport = { panX: 0, panY: 0, zoom: 1 };
       let pointerDown = false;
+      let seedPoint = null;
       let panDrag = null;
       let spaceHeld = false;
       let insetHover = false;
@@ -1214,7 +1245,7 @@
 
       const ids = [
         "hudA", "hudB", "hudEnergy", "hudFps", "stateLabel", "playBtn", "soundBtn",
-        "resetBtn", "randomBtn", "sweepBtn", "injectBtn", "aRange", "bRange",
+        "resetBtn", "randomBtn", "sweepBtn", "injectBtn", "seedLockBtn", "aRange", "bRange",
         "speedRateSelect", "speedTrimRange", "particlesRange", "fadeRange", "glowRange", "aOut", "bOut",
         "stepsOut", "particlesOut", "fadeOut", "glowOut", "presetGrid", "audioLabel",
         "audioModeSelect", "volumeRange", "senseRange", "filterRange", "volumeOut", "senseOut",
@@ -1415,7 +1446,9 @@
         document.body.classList.toggle("paint-mode", state.inject);
         if (!state.inject) {
           pointerDown = false;
-          el.brushCursor.classList.remove("show", "painting");
+          el.brushCursor.classList.remove("show", "painting", "locked");
+        } else {
+          el.brushCursor.classList.toggle("locked", state.seedLock && !!seedPoint);
         }
       }
 
@@ -1428,6 +1461,7 @@
         el.brushCursor.style.top = `${event.clientY}px`;
         el.brushCursor.classList.add("show");
         el.brushCursor.classList.toggle("painting", pointerDown);
+        el.brushCursor.classList.toggle("locked", state.seedLock && !!seedPoint);
       }
 
       function saveConfig() {
@@ -1480,6 +1514,8 @@
         const h = window.innerHeight;
         canvas.width = Math.floor(w * dpr);
         canvas.height = Math.floor(h * dpr);
+        cameraBuffer.width = canvas.width;
+        cameraBuffer.height = canvas.height;
         canvas.style.width = `${w}px`;
         canvas.style.height = `${h}px`;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1512,21 +1548,48 @@
         view.scale = view.baseScale * viewport.zoom;
       }
 
-      function clearViewAfterCameraMove() {
-        clearField();
-        drawReticle();
+      function snapshotField() {
+        if (cameraBuffer.width !== canvas.width || cameraBuffer.height !== canvas.height) {
+          cameraBuffer.width = canvas.width;
+          cameraBuffer.height = canvas.height;
+        }
+        cameraBufferCtx.setTransform(1, 0, 0, 1, 0, 0);
+        cameraBufferCtx.clearRect(0, 0, cameraBuffer.width, cameraBuffer.height);
+        cameraBufferCtx.drawImage(canvas, 0, 0);
+        return {
+          cx: view.cx,
+          cy: view.cy,
+          scale: view.scale,
+          w: view.w,
+          h: view.h
+        };
       }
 
-      function resetViewport() {
-        viewport.panX = 0;
-        viewport.panY = 0;
-        viewport.zoom = 1;
-        applyViewport();
-        clearViewAfterCameraMove();
-        setStatus("Viewport reset");
+      function redrawFieldFromSnapshot(oldView) {
+        const pal = palettes[state.palette];
+        const ratio = view.scale / Math.max(1, oldView.scale);
+        ctx.save();
+        ctx.globalCompositeOperation = "copy";
+        ctx.fillStyle = rgba(pal.bg, 1);
+        ctx.fillRect(0, 0, view.w, view.h);
+        ctx.globalCompositeOperation = "source-over";
+        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(
+          cameraBuffer,
+          0,
+          0,
+          cameraBuffer.width,
+          cameraBuffer.height,
+          view.cx - oldView.cx * ratio,
+          view.cy - oldView.cy * ratio,
+          oldView.w * ratio,
+          oldView.h * ratio
+        );
+        ctx.restore();
       }
 
       function zoomAt(clientX, clientY, deltaY) {
+        const oldView = snapshotField();
         const before = screenToWorld(clientX, clientY);
         const factor = Math.exp(-deltaY * 0.0012);
         viewport.zoom = Math.max(0.35, Math.min(9, viewport.zoom * factor));
@@ -1534,7 +1597,7 @@
         viewport.panX = clientX - before.x * view.scale - view.baseCx;
         viewport.panY = clientY + before.y * view.scale - view.baseCy;
         applyViewport();
-        clearViewAfterCameraMove();
+        redrawFieldFromSnapshot(oldView);
       }
 
       function resetParticles() {
@@ -1598,17 +1661,33 @@
         };
       }
 
-      function injectAt(clientX, clientY, amount = 900) {
-        const p = screenToWorld(clientX, clientY);
+      function injectWorld(x, y, amount = 900, report = true) {
         for (let n = 0; n < amount; n++) {
           const i = (Math.random() * state.particles) | 0;
           const angle = Math.random() * TAU;
           const radius = Math.random() * 0.09;
-          xs[i] = p.x + Math.cos(angle) * radius;
-          ys[i] = p.y + Math.sin(angle) * radius;
+          xs[i] = x + Math.cos(angle) * radius;
+          ys[i] = y + Math.sin(angle) * radius;
           feedAge[i] = 1;
         }
-        setStatus("Injected local particles");
+        if (report) setStatus("Injected local particles");
+      }
+
+      function injectAt(clientX, clientY, amount = 900, report = true) {
+        const p = screenToWorld(clientX, clientY);
+        injectWorld(p.x, p.y, amount, report);
+        return p;
+      }
+
+      function setSeedPointFromPointer(event, amount = 900, report = true) {
+        seedPoint = injectAt(event.clientX, event.clientY, amount, report);
+        if (state.seedLock && report) setStatus("Continuous seed locked");
+      }
+
+      function emitContinuousSeed() {
+        if (!state.playing || !state.inject || !state.seedLock || !seedPoint) return;
+        const amount = pointerDown ? 220 : 150;
+        injectWorld(seedPoint.x, seedPoint.y, amount, false);
       }
 
       function fadeField(rate = 1) {
@@ -1850,7 +1929,7 @@
         el.hudB.textContent = format(state.b);
         el.hudEnergy.textContent = format(state.energy);
         el.hudFps.textContent = state.fps ? String(Math.round(state.fps)) : "--";
-        el.stateLabel.textContent = handControl.enabled ? "HAND" : state.inject ? "PAINTBRUSH" : state.playing ? (state.sweep ? "SWEEPING" : "RUNNING") : "PAUSED";
+        el.stateLabel.textContent = handControl.enabled ? "HAND" : state.seedLock && seedPoint ? "SEED LOCK" : state.inject ? "PAINTBRUSH" : state.playing ? (state.sweep ? "SWEEPING" : "RUNNING") : "PAUSED";
         el.audioLabel.textContent = audio && audio.enabled ? (state.audioMode === "feed" ? "FEED" : "LISTENING") : "SILENT";
       }
 
@@ -1883,6 +1962,7 @@
         if (state.playing) {
           const profile = takeIterationProfile();
           if (profile.iterations > 0) {
+            emitContinuousSeed();
             fadeField(profile.fadeFactor);
             drawAttractor(profile.iterations, profile.batchFactor);
           }
@@ -2057,6 +2137,11 @@
           : "Starts browser audio after your click. Use Audio Source to choose the full attractor or only freshly painted feed particles.";
         el.sweepBtn.classList.toggle("is-active", state.sweep);
         el.injectBtn.classList.toggle("is-active", state.inject);
+        el.seedLockBtn.classList.toggle("is-active", state.seedLock);
+        el.seedLockBtn.dataset.tipTitle = state.seedLock ? "Unlock seed" : "Continuous seed";
+        el.seedLockBtn.dataset.tipBody = state.seedLock
+          ? "Stops the locked particle stream. Paint remains available for manual seed clicks."
+          : "Locks a seed stream to the next point you click or drag on the field. Click another point to move the stream; unlock to stop it.";
         updatePaintMode();
         updateTelemetry();
         if (save) saveConfig();
@@ -2169,6 +2254,8 @@
         state.playing = false;
         state.sweep = false;
         state.inject = false;
+        state.seedLock = false;
+        seedPoint = null;
         state.glow = 0;
         glowCaution = false;
         hidePerfModal();
@@ -2313,7 +2400,8 @@
         panDrag = {
           pointerId: event.pointerId,
           lastX: event.clientX,
-          lastY: event.clientY
+          lastY: event.clientY,
+          oldView: snapshotField()
         };
         document.body.classList.add("panning");
         canvas.setPointerCapture(event.pointerId);
@@ -2326,7 +2414,7 @@
         panDrag.lastX = event.clientX;
         panDrag.lastY = event.clientY;
         applyViewport();
-        clearViewAfterCameraMove();
+        redrawFieldFromSnapshot(panDrag.oldView);
       }
 
       function endPan() {
@@ -2353,8 +2441,25 @@
         });
         el.injectBtn.addEventListener("click", () => {
           state.inject = !state.inject;
-          if (state.inject) state.sweep = false;
+          if (state.inject) {
+            state.sweep = false;
+          } else {
+            state.seedLock = false;
+            seedPoint = null;
+          }
           setStatus(state.inject ? "Paintbrush on: drag the field to seed particles" : "Paintbrush off");
+          syncControls();
+        });
+        el.seedLockBtn.addEventListener("click", () => {
+          state.seedLock = !state.seedLock;
+          if (state.seedLock) {
+            state.inject = true;
+            state.sweep = false;
+            setStatus(seedPoint ? "Continuous seed on" : "Continuous seed armed: click the field");
+          } else {
+            seedPoint = null;
+            setStatus("Continuous seed off");
+          }
           syncControls();
         });
         el.aRange.addEventListener("input", (event) => setParameterFromInput("a", event.target.value));
@@ -2455,7 +2560,7 @@
           pointerDown = true;
           canvas.setPointerCapture(event.pointerId);
           updateBrushCursor(event);
-          injectAt(event.clientX, event.clientY, 1300);
+          setSeedPointFromPointer(event, 1300, true);
         });
         canvas.addEventListener("pointermove", (event) => {
           if (panDrag) {
@@ -2465,7 +2570,7 @@
           }
           if (!state.inject) return;
           updateBrushCursor(event);
-          if (pointerDown) injectAt(event.clientX, event.clientY, 280);
+          if (pointerDown) setSeedPointFromPointer(event, 280, false);
         });
         canvas.addEventListener("pointerup", () => {
           endPan();
@@ -2493,10 +2598,6 @@
           zoomAt(event.clientX, event.clientY, event.deltaY);
           setStatus(`Viewport ${viewport.zoom.toFixed(2)}x`);
         }, { passive: false });
-        canvas.addEventListener("dblclick", (event) => {
-          event.preventDefault();
-          resetViewport();
-        });
 
         inset.addEventListener("pointerdown", (event) => {
           event.preventDefault();
