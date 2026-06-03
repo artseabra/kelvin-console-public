@@ -64,6 +64,7 @@
       height: 100vh;
       background: #010207;
       touch-action: none;
+      cursor: crosshair;
     }
 
     .shell {
@@ -461,6 +462,15 @@
       cursor: none;
     }
 
+    body.pan-ready #field,
+    body.panning #field {
+      cursor: grab;
+    }
+
+    body.panning #field {
+      cursor: grabbing;
+    }
+
     .paint-cursor.show {
       opacity: 1;
       transform: translate(-50%, -50%) scale(1);
@@ -536,6 +546,36 @@
       grid-template-columns: 84px minmax(0, 1fr);
     }
 
+    .control.compact {
+      grid-template-columns: 84px minmax(0, 1fr) 62px;
+    }
+
+    .hand-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .hand-status {
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(126, 232, 255, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    .hand-status.is-active {
+      border-color: rgba(130, 247, 182, 0.42);
+      color: var(--green);
+    }
+
     #exportBtn {
       width: 100%;
     }
@@ -566,6 +606,18 @@
       border: 1px solid rgba(126, 232, 255, 0.28);
       border-radius: var(--radius);
       background: rgba(0, 0, 0, 0.22);
+      cursor: grab;
+      touch-action: none;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    #inset.is-hot {
+      border-color: rgba(130, 247, 182, 0.78);
+      box-shadow: 0 0 22px rgba(130, 247, 182, 0.16);
+    }
+
+    #inset.is-dragging {
+      cursor: grabbing;
     }
 
     .inset-copy {
@@ -835,9 +887,30 @@
             <input id="bRange" type="range" min="0" max="6.283185307179586" step="0.001" value="1.923">
             <span class="readout" id="bOut">1.923</span>
           </div>
-          <div class="control">
-            <label for="stepsRange">Speed</label>
-            <input id="stepsRange" type="range" min="-2" max="1.30103" step="0.01" value="0.477">
+          <div class="control wide">
+            <label for="speedRateSelect" data-tip-title="Rate" data-tip-body="Chooses the main evolution band. Trim bends this value smoothly without making the slider jump across the whole range.">Rate</label>
+            <select id="speedRateSelect" aria-label="Speed rate">
+              <option value="0.01">0.01x drift</option>
+              <option value="0.03">0.03x crawl</option>
+              <option value="0.06">0.06x trace</option>
+              <option value="0.1">0.10x slow</option>
+              <option value="0.18">0.18x glide</option>
+              <option value="0.33">0.33x half-light</option>
+              <option value="0.5">0.50x half</option>
+              <option value="0.75">0.75x near-live</option>
+              <option value="1">1x live</option>
+              <option value="1.5">1.5x push</option>
+              <option value="2">2x fold</option>
+              <option value="3" selected>3x flow</option>
+              <option value="5">5x dense</option>
+              <option value="8">8x bright</option>
+              <option value="12">12x rush</option>
+              <option value="20">20x limit</option>
+            </select>
+          </div>
+          <div class="control compact">
+            <label for="speedTrimRange" data-tip-title="Speed trim" data-tip-body="Fine continuous speed control around the selected rate. This is the safe place for slow audio movement.">Trim</label>
+            <input id="speedTrimRange" type="range" min="-0.5" max="0.5" step="0.001" value="0">
             <span class="readout" id="stepsOut">3x</span>
           </div>
           <div class="control">
@@ -866,6 +939,10 @@
             <div class="inset-copy">
               <span>Each point is bounded by sin and cos, then pushed through the map again. The small dot tracks the active (a,b) coordinate.</span>
               <a class="source-link" href="https://fronkonstin.com/2019/10/28/the-chaos-game-an-experiment-about-fractals-recursivity-and-creative-coding/" target="_blank" rel="noreferrer">Fronkonstin chaos-game note</a>
+              <div class="hand-row">
+                <button id="handBtn" data-tip-title="Hand control" data-tip-body="Uses local camera motion to steer the a,b dot. Video stays in the browser; disable it to release the camera.">Hand control</button>
+                <span class="hand-status" id="handStatus">camera off</span>
+              </div>
             </div>
           </div>
           </div>
@@ -966,6 +1043,8 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="tip-popover" id="tooltip" role="tooltip" aria-hidden="true"></div>
   <div class="paint-cursor" id="brushCursor" aria-hidden="true"></div>
+  <video id="handVideo" playsinline muted aria-hidden="true" hidden></video>
+  <canvas id="handCanvas" width="96" height="72" aria-hidden="true" hidden></canvas>
   <div class="modal-backdrop" id="perfModal" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="perfTitle">
       <div class="eyebrow">Performance guard</div>
@@ -994,6 +1073,9 @@
       const inset = document.getElementById("inset");
       const ictx = inset.getContext("2d");
       const panel = document.querySelector(".panel");
+      const handVideo = document.getElementById("handVideo");
+      const handCanvas = document.getElementById("handCanvas");
+      const handCtx = handCanvas.getContext("2d");
 
       const palettes = {
         kelvin: {
@@ -1064,11 +1146,14 @@
         ["Polar bloom", 4.712, 0.785]
       ];
 
-      const CONFIG_VERSION = 5;
+      const speedRates = [0.01, 0.03, 0.06, 0.1, 0.18, 0.33, 0.5, 0.75, 1, 1.5, 2, 3, 5, 8, 12, 20];
+      const CONFIG_VERSION = 6;
       const state = {
         a: 0.459,
         b: 1.923,
         steps: 3,
+        speedRate: 3,
+        speedTrim: 0,
         particles: 6000,
         fade: 0.955,
         glow: 0,
@@ -1087,6 +1172,9 @@
         feedActivity: 0,
         feedAvgX: 0,
         feedAvgY: 0,
+        audioEnergy: 0,
+        audioActivity: 0,
+        audioAvgY: 0,
         avgX: 0,
         avgY: 0,
         fps: 0
@@ -1095,8 +1183,14 @@
       let xs = new Float32Array(state.particles);
       let ys = new Float32Array(state.particles);
       let feedAge = new Float32Array(state.particles);
-      let view = { w: 0, h: 0, cx: 0, cy: 0, scale: 1 };
+      let view = { w: 0, h: 0, baseCx: 0, baseCy: 0, baseScale: 1, cx: 0, cy: 0, scale: 1 };
+      let viewport = { panX: 0, panY: 0, zoom: 1 };
       let pointerDown = false;
+      let panDrag = null;
+      let spaceHeld = false;
+      let insetHover = false;
+      let insetDragging = false;
+      let insetDrag = null;
       let renderCursor = 0;
       let dynamicBatch = 1400;
       let lastRender = 0;
@@ -1110,14 +1204,21 @@
       let perfGuardOpen = false;
       let perfGuardCooldownUntil = 0;
       let stepAccumulator = 0;
+      let lastMotionFrame = null;
+      let lastMotionTick = 0;
+      let handRaf = 0;
+      const handControl = {
+        enabled: false,
+        stream: null
+      };
 
       const ids = [
         "hudA", "hudB", "hudEnergy", "hudFps", "stateLabel", "playBtn", "soundBtn",
         "resetBtn", "randomBtn", "sweepBtn", "injectBtn", "aRange", "bRange",
-        "stepsRange", "particlesRange", "fadeRange", "glowRange", "aOut", "bOut",
+        "speedRateSelect", "speedTrimRange", "particlesRange", "fadeRange", "glowRange", "aOut", "bOut",
         "stepsOut", "particlesOut", "fadeOut", "glowOut", "presetGrid", "audioLabel",
         "audioModeSelect", "volumeRange", "senseRange", "filterRange", "volumeOut", "senseOut",
-        "filterOut", "exportBtn", "paletteSelect", "pointColorSelect", "trailColorSelect", "clearBtn", "savePresetBtn", "clearSavedBtn", "statusText", "toast", "tooltip", "brushCursor", "presetCount",
+        "filterOut", "exportBtn", "paletteSelect", "pointColorSelect", "trailColorSelect", "clearBtn", "savePresetBtn", "clearSavedBtn", "handBtn", "handStatus", "statusText", "toast", "tooltip", "brushCursor", "presetCount",
         "perfModal", "perfBody", "perfGlowOut", "perfFpsOut", "perfRevertBtn", "perfProceedBtn"
       ];
       const el = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
@@ -1160,12 +1261,36 @@
         return rgbColor(state.trailColor, fallback, alpha);
       }
 
-      function speedToSlider(speed) {
-        return Math.log10(Math.max(0.01, Math.min(20, Number(speed) || 1)));
+      function clampSpeed(value) {
+        return Math.max(0.01, Math.min(20, Number(value) || 1));
       }
 
-      function sliderToSpeed(value) {
-        return Math.max(0.01, Math.min(20, Math.pow(10, Number(value))));
+      function deriveSpeedControls(speed) {
+        const safeSpeed = clampSpeed(speed);
+        let rate = speedRates[0];
+        let bestDistance = Infinity;
+        speedRates.forEach((candidate) => {
+          const distance = Math.abs(Math.log(safeSpeed / candidate));
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            rate = candidate;
+          }
+        });
+        const trim = Math.max(-0.5, Math.min(0.5, Math.log2(safeSpeed / rate)));
+        return { rate, trim };
+      }
+
+      function applySpeedControls() {
+        state.speedRate = clampSpeed(state.speedRate);
+        state.speedTrim = Math.max(-0.5, Math.min(0.5, Number(state.speedTrim) || 0));
+        state.steps = clampSpeed(state.speedRate * Math.pow(2, state.speedTrim));
+      }
+
+      function setSpeedFromValue(speed) {
+        const controls = deriveSpeedControls(speed);
+        state.speedRate = controls.rate;
+        state.speedTrim = controls.trim;
+        applySpeedControls();
       }
 
       function formatSpeed(value) {
@@ -1311,6 +1436,8 @@
           a: state.a,
           b: state.b,
           steps: state.steps,
+          speedRate: state.speedRate,
+          speedTrim: state.speedTrim,
           particles: state.particles,
           fade: state.fade,
           glow: state.glow,
@@ -1330,10 +1457,14 @@
           const raw = localStorage.getItem("kelvin.conradi.config");
           if (!raw) return;
           const parsed = JSON.parse(raw);
-          if (parsed.version !== CONFIG_VERSION) return;
+          if (!Number.isFinite(parsed.version) || parsed.version < 5 || parsed.version > CONFIG_VERSION) return;
           Object.assign(state, parsed);
           state.glow = Math.min(Number(state.glow) || 0, SAFE_GLOW_MAX);
-          state.steps = Math.max(0.01, Math.min(20, Number(state.steps) || 1));
+          if (!Number.isFinite(state.speedRate) || !Number.isFinite(state.speedTrim)) {
+            setSpeedFromValue(state.steps);
+          } else {
+            applySpeedControls();
+          }
           if (!palettes[state.palette]) state.palette = "kelvin";
           if (state.pointColor !== "auto" && state.pointColor !== "spectrum" && !colorModes[state.pointColor]) state.pointColor = "auto";
           if (state.trailColor !== "auto" && state.trailColor !== "spectrum" && !colorModes[state.trailColor]) state.trailColor = "auto";
@@ -1368,9 +1499,42 @@
         const usableH = desktop ? h : Math.max(260, h - panelRect.height - 14);
         view.w = w;
         view.h = h;
-        view.cx = desktop ? usableW * 0.5 : w * 0.5;
-        view.cy = desktop ? h * 0.54 : usableH * 0.5;
-        view.scale = Math.max(110, Math.min(usableW, usableH) * (desktop ? 0.42 : 0.38));
+        view.baseCx = desktop ? usableW * 0.5 : w * 0.5;
+        view.baseCy = desktop ? h * 0.54 : usableH * 0.5;
+        view.baseScale = Math.max(110, Math.min(usableW, usableH) * (desktop ? 0.42 : 0.38));
+        applyViewport();
+      }
+
+      function applyViewport() {
+        viewport.zoom = Math.max(0.35, Math.min(9, Number(viewport.zoom) || 1));
+        view.cx = view.baseCx + viewport.panX;
+        view.cy = view.baseCy + viewport.panY;
+        view.scale = view.baseScale * viewport.zoom;
+      }
+
+      function clearViewAfterCameraMove() {
+        clearField();
+        drawReticle();
+      }
+
+      function resetViewport() {
+        viewport.panX = 0;
+        viewport.panY = 0;
+        viewport.zoom = 1;
+        applyViewport();
+        clearViewAfterCameraMove();
+        setStatus("Viewport reset");
+      }
+
+      function zoomAt(clientX, clientY, deltaY) {
+        const before = screenToWorld(clientX, clientY);
+        const factor = Math.exp(-deltaY * 0.0012);
+        viewport.zoom = Math.max(0.35, Math.min(9, viewport.zoom * factor));
+        applyViewport();
+        viewport.panX = clientX - before.x * view.scale - view.baseCx;
+        viewport.panY = clientY + before.y * view.scale - view.baseCy;
+        applyViewport();
+        clearViewAfterCameraMove();
       }
 
       function resetParticles() {
@@ -1389,6 +1553,9 @@
         state.feedActivity = 0;
         state.feedAvgX = 0;
         state.feedAvgY = 0;
+        state.audioEnergy = 0;
+        state.audioActivity = 0;
+        state.audioAvgY = 0;
         stepAccumulator = 0;
         warmParticles(18);
         clearField();
@@ -1444,12 +1611,12 @@
         setStatus("Injected local particles");
       }
 
-      function fadeField() {
+      function fadeField(rate = 1) {
         const pal = palettes[state.palette];
-        const decay = clamp01(1 - state.fade);
+        const decay = clamp01(1 - state.fade) * Math.max(0.06, Math.min(1, rate));
         ctx.save();
         ctx.globalCompositeOperation = "source-over";
-        ctx.fillStyle = rgba(pal.bg, Math.max(0.012, decay));
+        ctx.fillStyle = rgba(pal.bg, Math.max(0.0035, decay));
         ctx.fillRect(0, 0, view.w, view.h);
         ctx.restore();
       }
@@ -1470,11 +1637,13 @@
         ctx.restore();
       }
 
-      function drawAttractor(iterations) {
+      function drawAttractor(iterations, batchFactor = 1) {
         const pal = palettes[state.palette];
         const count = state.particles;
         const steps = Math.max(1, Math.min(20, Math.round(iterations || 1)));
-        const batch = Math.max(360, Math.min(count, Math.round(dynamicBatch)));
+        const slowMode = state.steps < 1;
+        const minBatch = slowMode ? 64 : 360;
+        const batch = Math.max(minBatch, Math.min(count, Math.round(dynamicBatch * Math.max(0.035, Math.min(1.4, batchFactor)))));
         const lineStride = Math.max(1, Math.ceil(batch / 260));
         const glowLevel = Math.max(0, Math.min(CAUTION_GLOW_MAX, state.glow));
         const safeGlow = Math.min(glowLevel, SAFE_GLOW_MAX);
@@ -1562,13 +1731,58 @@
         state.avgY = sampleY / Math.max(1, samples);
       }
 
-      function drawInset(now) {
+      function insetGeometry() {
         const w = inset.width;
         const h = inset.height;
         const pad = 20;
         const plot = w - pad * 2;
-        const x = pad + (state.a / TAU) * plot;
-        const y = h - pad - (state.b / TAU) * plot;
+        return { w, h, pad, plot };
+      }
+
+      function currentInsetPoint() {
+        const { h, pad, plot } = insetGeometry();
+        return {
+          x: pad + (state.a / TAU) * plot,
+          y: h - pad - (state.b / TAU) * plot
+        };
+      }
+
+      function pointerToInset(event) {
+        const rect = inset.getBoundingClientRect();
+        const x = (event.clientX - rect.left) * (inset.width / rect.width);
+        const y = (event.clientY - rect.top) * (inset.height / rect.height);
+        return { x, y, rect };
+      }
+
+      function setParametersFromInset(event) {
+        const { pad, plot } = insetGeometry();
+        const p = pointerToInset(event);
+        if (event.shiftKey && insetDrag) {
+          const dx = (event.clientX - insetDrag.lastX) * (inset.width / p.rect.width);
+          const dy = (event.clientY - insetDrag.lastY) * (inset.height / p.rect.height);
+          const precision = 0.22;
+          state.a = Math.max(0, Math.min(TAU, state.a + (dx / plot) * TAU * precision));
+          state.b = Math.max(0, Math.min(TAU, state.b - (dy / plot) * TAU * precision));
+        } else {
+          state.a = Math.max(0, Math.min(TAU, ((p.x - pad) / plot) * TAU));
+          state.b = Math.max(0, Math.min(TAU, ((inset.height - pad - p.y) / plot) * TAU));
+        }
+        insetDrag = { lastX: event.clientX, lastY: event.clientY };
+        state.sweep = false;
+        syncControls(false);
+      }
+
+      function updateInsetHover(event) {
+        if (insetDragging) return;
+        const p = pointerToInset(event);
+        const dot = currentInsetPoint();
+        insetHover = Math.hypot(p.x - dot.x, p.y - dot.y) < 18;
+        inset.classList.toggle("is-hot", insetHover || handControl.enabled);
+      }
+
+      function drawInset(now) {
+        const { w, h, pad, plot } = insetGeometry();
+        const { x, y } = currentInsetPoint();
         paramTrail.push([x, y]);
         if (paramTrail.length > 180) paramTrail.shift();
 
@@ -1608,15 +1822,16 @@
           ictx.stroke();
         }
 
-        const pulse = 4 + Math.sin(now * 0.009) * 1.5;
+        const activeDot = insetHover || insetDragging || handControl.enabled;
+        const pulse = (activeDot ? 7 : 4) + Math.sin(now * 0.009) * (activeDot ? 2.3 : 1.5);
         ictx.beginPath();
-        ictx.arc(x, y, pulse + 4, 0, TAU);
+        ictx.arc(x, y, pulse + (activeDot ? 7 : 4), 0, TAU);
         ictx.fillStyle = "rgba(101, 220, 255, 0.16)";
         ictx.fill();
         ictx.beginPath();
         ictx.arc(x, y, pulse, 0, TAU);
-        ictx.fillStyle = "rgba(130, 247, 182, 0.96)";
-        ictx.shadowBlur = 12;
+        ictx.fillStyle = activeDot ? "rgba(255, 209, 102, 0.98)" : "rgba(130, 247, 182, 0.96)";
+        ictx.shadowBlur = activeDot ? 20 : 12;
         ictx.shadowColor = "rgba(130, 247, 182, 0.9)";
         ictx.fill();
         ictx.shadowBlur = 0;
@@ -1635,16 +1850,24 @@
         el.hudB.textContent = format(state.b);
         el.hudEnergy.textContent = format(state.energy);
         el.hudFps.textContent = state.fps ? String(Math.round(state.fps)) : "--";
-        el.stateLabel.textContent = state.inject ? "PAINTBRUSH" : state.playing ? (state.sweep ? "SWEEPING" : "RUNNING") : "PAUSED";
+        el.stateLabel.textContent = handControl.enabled ? "HAND" : state.inject ? "PAINTBRUSH" : state.playing ? (state.sweep ? "SWEEPING" : "RUNNING") : "PAUSED";
         el.audioLabel.textContent = audio && audio.enabled ? (state.audioMode === "feed" ? "FEED" : "LISTENING") : "SILENT";
       }
 
-      function takeIterationCount() {
-        stepAccumulator += Math.max(0.01, Math.min(20, state.steps));
+      function takeIterationProfile() {
+        const speed = clampSpeed(state.steps);
+        if (speed < 1) {
+          return {
+            iterations: 1,
+            batchFactor: Math.max(0.035, Math.pow(speed, 0.72)),
+            fadeFactor: Math.max(0.06, Math.sqrt(speed))
+          };
+        }
+        stepAccumulator += speed;
         const iterations = Math.floor(stepAccumulator);
-        if (iterations < 1) return 0;
+        if (iterations < 1) return { iterations: 0, batchFactor: 1, fadeFactor: 1 };
         stepAccumulator -= iterations;
-        return Math.min(20, iterations);
+        return { iterations: Math.min(20, iterations), batchFactor: 1, fadeFactor: 1 };
       }
 
       function animationFrame(now) {
@@ -1658,10 +1881,10 @@
         lastRender = now;
         updateSweep(now);
         if (state.playing) {
-          const iterations = takeIterationCount();
-          if (iterations > 0) {
-            fadeField();
-            drawAttractor(iterations);
+          const profile = takeIterationProfile();
+          if (profile.iterations > 0) {
+            fadeField(profile.fadeFactor);
+            drawAttractor(profile.iterations, profile.batchFactor);
           }
         }
         drawInset(now);
@@ -1763,13 +1986,16 @@
         const feedMode = state.audioMode === "feed";
         const energy = feedMode ? state.feedEnergy : state.energy;
         const activity = feedMode ? state.feedActivity : 1;
-        const audibleActivity = feedMode ? Math.min(1, activity * 1.7) : 1;
-        const targetGain = audio.enabled
-          ? state.volume * audibleActivity * Math.min(1, 0.18 + energy * state.sensitivity)
-          : 0;
-        audio.master.gain.setTargetAtTime(targetGain, t, 0.06);
         const avgY = feedMode ? state.feedAvgY : state.avgY;
-        audio.filter.frequency.setTargetAtTime(state.filter + Math.abs(avgY) * 2600, t, 0.08);
+        state.audioEnergy += (energy - state.audioEnergy) * 0.09;
+        state.audioActivity += (activity - state.audioActivity) * 0.12;
+        state.audioAvgY += (avgY - state.audioAvgY) * 0.10;
+        const audibleActivity = feedMode ? Math.min(1, state.audioActivity * 1.7) : 1;
+        const targetGain = audio.enabled
+          ? state.volume * audibleActivity * Math.min(1, 0.18 + state.audioEnergy * state.sensitivity)
+          : 0;
+        audio.master.gain.setTargetAtTime(targetGain, t, 0.12);
+        audio.filter.frequency.setTargetAtTime(state.filter + Math.abs(state.audioAvgY) * 2600, t, 0.16);
         const base = 72 + state.a * 18 + (feedMode ? 36 : 0);
         const spread = 160 + state.b * 42;
 
@@ -1783,17 +2009,19 @@
           const y = ys[idx] || 0;
           const feed = feedMode ? Math.max(0, feedAge[idx] || 0) : 1;
           const harmonic = 1 + (i % 5) * 0.375;
-          const freq = Math.max(38, base + (x + 1) * spread * harmonic + energy * 80);
-          voice.osc.frequency.setTargetAtTime(freq, t, 0.07);
-          voice.pan.pan.setTargetAtTime(Math.max(-0.92, Math.min(0.92, x)), t, 0.09);
-          voice.gain.gain.setTargetAtTime(feedMode ? (0.004 + feed * 0.046 + Math.abs(y) * 0.006) : (0.018 + Math.abs(y) * 0.012), t, 0.08);
+          const freq = Math.max(38, base + (x + 1) * spread * harmonic + state.audioEnergy * 80);
+          voice.osc.frequency.setTargetAtTime(freq, t, 0.13);
+          voice.pan.pan.setTargetAtTime(Math.max(-0.92, Math.min(0.92, x)), t, 0.14);
+          voice.gain.gain.setTargetAtTime(feedMode ? (0.004 + feed * 0.046 + Math.abs(y) * 0.006) : (0.018 + Math.abs(y) * 0.012), t, 0.13);
         });
       }
 
       function syncControls(save = true) {
+        applySpeedControls();
         el.aRange.value = state.a;
         el.bRange.value = state.b;
-        el.stepsRange.value = speedToSlider(state.steps);
+        el.speedRateSelect.value = String(state.speedRate);
+        el.speedTrimRange.value = state.speedTrim;
         el.particlesRange.value = state.particles;
         el.fadeRange.value = state.fade;
         el.glowRange.value = state.glow;
@@ -1835,6 +2063,7 @@
       }
 
       function setParameterFromInput(key, value) {
+        if (handControl.enabled) stopHandControl(false);
         state[key] = Number(value);
         state.sweep = false;
         paramTrail.length = 0;
@@ -1865,6 +2094,7 @@
       }
 
       function applyPreset(name, a, b) {
+        if (handControl.enabled) stopHandControl(false);
         state.a = a;
         state.b = b;
         state.sweep = false;
@@ -1926,6 +2156,7 @@
       }
 
       function randomize() {
+        if (handControl.enabled) stopHandControl(false);
         state.a = Math.random() * TAU;
         state.b = Math.random() * TAU;
         state.sweep = false;
@@ -1947,6 +2178,11 @@
           audio.enabled = false;
           audio.master.gain.setTargetAtTime(0, audio.ac.currentTime, 0.04);
         }
+        stopHandControl(false);
+        viewport.panX = 0;
+        viewport.panY = 0;
+        viewport.zoom = 1;
+        applyViewport();
         resetParticles();
         syncControls();
         setStatus("Console reset: paused, audio off, particles reseeded");
@@ -1960,6 +2196,146 @@
         setStatus("Frame exported");
       }
 
+      function setHandStatus(text, active = false) {
+        el.handStatus.textContent = text;
+        el.handStatus.classList.toggle("is-active", active);
+        el.handBtn.classList.toggle("is-active", active);
+      }
+
+      function stopHandControl(save = true) {
+        handControl.enabled = false;
+        if (handRaf) cancelAnimationFrame(handRaf);
+        handRaf = 0;
+        lastMotionFrame = null;
+        if (handControl.stream) {
+          handControl.stream.getTracks().forEach((track) => track.stop());
+          handControl.stream = null;
+        }
+        handVideo.srcObject = null;
+        setHandStatus("camera off", false);
+        inset.classList.toggle("is-hot", insetHover || insetDragging);
+        if (save) saveConfig();
+      }
+
+      function steerFromCameraMotion(now) {
+        if (!handControl.enabled) return;
+        handRaf = requestAnimationFrame(steerFromCameraMotion);
+        if (handVideo.readyState < 2 || now - lastMotionTick < 72) return;
+        lastMotionTick = now;
+
+        const w = handCanvas.width;
+        const h = handCanvas.height;
+        handCtx.save();
+        handCtx.scale(-1, 1);
+        handCtx.drawImage(handVideo, -w, 0, w, h);
+        handCtx.restore();
+        const data = handCtx.getImageData(0, 0, w, h).data;
+        if (!lastMotionFrame) {
+          lastMotionFrame = new Uint8Array(w * h);
+          for (let i = 0; i < w * h; i++) {
+            const j = i * 4;
+            lastMotionFrame[i] = (data[j] + data[j + 1] + data[j + 2]) / 3;
+          }
+          return;
+        }
+
+        let weight = 0;
+        let sumX = 0;
+        let sumY = 0;
+        let changed = 0;
+        for (let y = 0; y < h; y += 2) {
+          for (let x = 0; x < w; x += 2) {
+            const i = y * w + x;
+            const j = i * 4;
+            const gray = (data[j] + data[j + 1] + data[j + 2]) / 3;
+            const diff = Math.abs(gray - lastMotionFrame[i]);
+            lastMotionFrame[i] = gray;
+            if (diff > 20) {
+              weight += diff;
+              sumX += x * diff;
+              sumY += y * diff;
+              changed++;
+            }
+          }
+        }
+
+        if (changed < 16 || weight <= 0) return;
+        const targetA = (sumX / weight / Math.max(1, w - 1)) * TAU;
+        const targetB = (1 - sumY / weight / Math.max(1, h - 1)) * TAU;
+        state.a += (targetA - state.a) * 0.16;
+        state.b += (targetB - state.b) * 0.16;
+        state.sweep = false;
+        paramTrail.length = Math.min(paramTrail.length, 90);
+        syncControls(false);
+        setHandStatus(`${Math.min(99, Math.round(changed / 6))}% motion`, true);
+      }
+
+      async function toggleHandControl() {
+        if (handControl.enabled) {
+          stopHandControl();
+          setStatus("Hand motion control off");
+          return;
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setHandStatus("unsupported", false);
+          setStatus("Camera motion control is not available in this browser");
+          return;
+        }
+        try {
+          setHandStatus("requesting", true);
+          handControl.stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              facingMode: "user",
+              width: { ideal: 192 },
+              height: { ideal: 144 }
+            }
+          });
+          handVideo.srcObject = handControl.stream;
+          await handVideo.play();
+          handControl.enabled = true;
+          state.sweep = false;
+          lastMotionFrame = null;
+          lastMotionTick = 0;
+          setHandStatus("motion live", true);
+          inset.classList.add("is-hot");
+          syncControls(false);
+          setStatus("Hand motion control active");
+          handRaf = requestAnimationFrame(steerFromCameraMotion);
+        } catch (error) {
+          stopHandControl(false);
+          setHandStatus("camera denied", false);
+          setStatus("Camera permission was not granted");
+        }
+      }
+
+      function beginPan(event) {
+        panDrag = {
+          pointerId: event.pointerId,
+          lastX: event.clientX,
+          lastY: event.clientY
+        };
+        document.body.classList.add("panning");
+        canvas.setPointerCapture(event.pointerId);
+      }
+
+      function updatePan(event) {
+        if (!panDrag || panDrag.pointerId !== event.pointerId) return;
+        viewport.panX += event.clientX - panDrag.lastX;
+        viewport.panY += event.clientY - panDrag.lastY;
+        panDrag.lastX = event.clientX;
+        panDrag.lastY = event.clientY;
+        applyViewport();
+        clearViewAfterCameraMove();
+      }
+
+      function endPan() {
+        if (!panDrag) return;
+        panDrag = null;
+        document.body.classList.remove("panning");
+        setStatus(`Viewport ${viewport.zoom.toFixed(2)}x`);
+      }
+
       function wireControls() {
         el.playBtn.addEventListener("click", () => {
           state.playing = !state.playing;
@@ -1970,6 +2346,7 @@
         el.randomBtn.addEventListener("click", randomize);
         el.sweepBtn.addEventListener("click", () => {
           state.sweep = !state.sweep;
+          if (state.sweep && handControl.enabled) stopHandControl(false);
           paramTrail.length = 0;
           setStatus(state.sweep ? "Sweep on: a and b are moving through parameter space" : "Sweep off: manual parameter control");
           syncControls();
@@ -1982,9 +2359,20 @@
         });
         el.aRange.addEventListener("input", (event) => setParameterFromInput("a", event.target.value));
         el.bRange.addEventListener("input", (event) => setParameterFromInput("b", event.target.value));
-        el.stepsRange.addEventListener("input", (event) => {
-          state.steps = sliderToSpeed(event.target.value);
+        el.speedRateSelect.addEventListener("change", (event) => {
+          state.speedRate = Number(event.target.value);
+          applySpeedControls();
           stepAccumulator = 0;
+          setStatus(`Rate: ${formatSpeed(state.steps)}`);
+          syncControls();
+        });
+        el.speedTrimRange.addEventListener("input", (event) => {
+          state.speedTrim = Number(event.target.value);
+          applySpeedControls();
+          stepAccumulator = 0;
+          syncControls(false);
+        });
+        el.speedTrimRange.addEventListener("change", () => {
           syncControls();
         });
         el.particlesRange.addEventListener("input", (event) => {
@@ -2042,6 +2430,7 @@
         });
         el.savePresetBtn.addEventListener("click", saveCurrentPreset);
         el.clearSavedBtn.addEventListener("click", clearSavedPresets);
+        el.handBtn.addEventListener("click", toggleHandControl);
         el.exportBtn.addEventListener("click", exportPng);
         el.clearBtn.addEventListener("click", clearField);
         el.perfRevertBtn.addEventListener("click", revertSafeGlow);
@@ -2056,6 +2445,12 @@
         });
 
         canvas.addEventListener("pointerdown", (event) => {
+          const wantsPan = event.button === 2 || (event.button === 0 && spaceHeld);
+          if (wantsPan) {
+            event.preventDefault();
+            beginPan(event);
+            return;
+          }
           if (!state.inject) return;
           pointerDown = true;
           canvas.setPointerCapture(event.pointerId);
@@ -2063,11 +2458,22 @@
           injectAt(event.clientX, event.clientY, 1300);
         });
         canvas.addEventListener("pointermove", (event) => {
+          if (panDrag) {
+            event.preventDefault();
+            updatePan(event);
+            return;
+          }
           if (!state.inject) return;
           updateBrushCursor(event);
           if (pointerDown) injectAt(event.clientX, event.clientY, 280);
         });
         canvas.addEventListener("pointerup", () => {
+          endPan();
+          pointerDown = false;
+          el.brushCursor.classList.remove("painting");
+        });
+        canvas.addEventListener("pointercancel", () => {
+          endPan();
           pointerDown = false;
           el.brushCursor.classList.remove("painting");
         });
@@ -2075,14 +2481,70 @@
           updateBrushCursor(event);
         });
         canvas.addEventListener("pointerleave", () => {
+          endPan();
           pointerDown = false;
           el.brushCursor.classList.remove("show", "painting");
+        });
+        canvas.addEventListener("contextmenu", (event) => {
+          event.preventDefault();
+        });
+        canvas.addEventListener("wheel", (event) => {
+          event.preventDefault();
+          zoomAt(event.clientX, event.clientY, event.deltaY);
+          setStatus(`Viewport ${viewport.zoom.toFixed(2)}x`);
+        }, { passive: false });
+        canvas.addEventListener("dblclick", (event) => {
+          event.preventDefault();
+          resetViewport();
+        });
+
+        inset.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          if (handControl.enabled) stopHandControl(false);
+          insetDragging = true;
+          insetDrag = { lastX: event.clientX, lastY: event.clientY };
+          inset.classList.add("is-hot", "is-dragging");
+          inset.setPointerCapture(event.pointerId);
+          setParametersFromInset(event);
+          setStatus("Parameter coordinate drag");
+        });
+        inset.addEventListener("pointermove", (event) => {
+          if (insetDragging) {
+            event.preventDefault();
+            setParametersFromInset(event);
+          } else {
+            updateInsetHover(event);
+          }
+        });
+        inset.addEventListener("pointerup", (event) => {
+          insetDragging = false;
+          insetDrag = null;
+          inset.classList.remove("is-dragging");
+          updateInsetHover(event);
+          saveConfig();
+          setStatus("Parameter coordinate set");
+        });
+        inset.addEventListener("pointercancel", () => {
+          insetDragging = false;
+          insetDrag = null;
+          insetHover = false;
+          inset.classList.remove("is-hot", "is-dragging");
+        });
+        inset.addEventListener("pointerleave", () => {
+          if (insetDragging) return;
+          insetHover = false;
+          inset.classList.toggle("is-hot", handControl.enabled);
         });
 
         window.addEventListener("keydown", (event) => {
           if (event.target && ["INPUT", "SELECT", "BUTTON"].includes(event.target.tagName)) return;
+          let handled = true;
           if (event.key === " ") {
             event.preventDefault();
+            spaceHeld = true;
+            document.body.classList.add("pan-ready");
+            return;
+          } else if (event.key.toLowerCase() === "p") {
             state.playing = !state.playing;
           } else if (event.key.toLowerCase() === "r") {
             resetParticles();
@@ -2094,9 +2556,18 @@
             state.b = wrapTau(state.b + 0.025);
           } else if (event.key === "ArrowDown") {
             state.b = wrapTau(state.b - 0.025);
+          } else {
+            handled = false;
           }
+          if (!handled) return;
           state.sweep = false;
           syncControls();
+        });
+        window.addEventListener("keyup", (event) => {
+          if (event.key === " ") {
+            spaceHeld = false;
+            document.body.classList.remove("pan-ready");
+          }
         });
 
         window.addEventListener("resize", resize);
