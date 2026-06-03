@@ -215,12 +215,11 @@
     }
 
     .section {
-      padding: 14px 0;
+      padding: 0;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .section:first-child {
-      padding-top: 0;
       border-top: 0;
     }
 
@@ -229,11 +228,51 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 12px;
+      width: 100%;
+      min-height: 44px;
+      margin: 0;
+      padding: 10px 0;
       color: rgba(238, 249, 255, 0.86);
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 11px;
       text-transform: uppercase;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .section-title::-webkit-details-marker {
+      display: none;
+    }
+
+    .section-title::after {
+      content: "+";
+      display: inline-grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border: 1px solid rgba(126, 232, 255, 0.24);
+      border-radius: 999px;
+      color: var(--cyan);
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    .section[open] > .section-title::after {
+      content: "-";
+    }
+
+    .section-title > span:last-child {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .section-content {
+      padding: 0 0 14px;
+    }
+
+    .section:not([open]) .section-title {
+      color: rgba(238, 249, 255, 0.68);
     }
 
     .button-row,
@@ -251,6 +290,13 @@
       grid-template-columns: 1fr 1fr;
     }
 
+    .preset-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
     button,
     select {
       height: 38px;
@@ -262,6 +308,10 @@
       font-size: 12px;
       cursor: pointer;
       transition: border-color 150ms ease, background 150ms ease, color 150ms ease, transform 150ms ease;
+    }
+
+    select {
+      min-width: 0;
     }
 
     button:hover,
@@ -469,6 +519,25 @@
     .control label {
       color: rgba(238, 249, 255, 0.78);
       font-size: 12px;
+    }
+
+    .control label[data-tip-body] {
+      cursor: help;
+      text-decoration: underline;
+      text-decoration-color: rgba(126, 232, 255, 0.28);
+      text-underline-offset: 3px;
+    }
+
+    .control select {
+      width: 100%;
+    }
+
+    .control.wide {
+      grid-template-columns: 84px minmax(0, 1fr);
+    }
+
+    #exportBtn {
+      width: 100%;
     }
 
     .readout {
@@ -713,14 +782,15 @@
 
     <aside class="panel" aria-label="Kelvin Console controls">
       <header class="panel-head">
-        <div class="eyebrow">Share artifact</div>
+        <div class="eyebrow">Conradi instrument</div>
         <h2>Listen to the attractor</h2>
         <p>Real-time control surface for the 2D iterative system in Simone Conradi's animation.</p>
       </header>
 
       <div class="panel-body">
-        <section class="section">
-          <div class="section-title"><span>Playback</span><span id="stateLabel">RUNNING</span></div>
+        <details class="section" open>
+          <summary class="section-title"><span>Playback</span><span id="stateLabel">RUNNING</span></summary>
+          <div class="section-content">
           <div class="button-row">
             <button id="playBtn" class="icon-button is-active" aria-label="Pause field" data-tip-title="Pause field" data-tip-body="Stops the animation clock. The current attractor stays on screen.">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14"></path><path d="M16 5v14"></path></svg>
@@ -749,10 +819,12 @@
               <span>Paint</span>
             </button>
           </div>
-        </section>
+          </div>
+        </details>
 
-        <section class="section">
-          <div class="section-title"><span>Parameters</span><span>0 to 2pi</span></div>
+        <details class="section" open>
+          <summary class="section-title"><span>Parameters</span><span>0 to 2pi</span></summary>
+          <div class="section-content">
           <div class="control">
             <label for="aRange">a</label>
             <input id="aRange" type="range" min="0" max="6.283185307179586" step="0.001" value="0.459">
@@ -765,7 +837,7 @@
           </div>
           <div class="control">
             <label for="stepsRange">Speed</label>
-            <input id="stepsRange" type="range" min="1" max="24" step="1" value="3">
+            <input id="stepsRange" type="range" min="-2" max="1.30103" step="0.01" value="0.477">
             <span class="readout" id="stepsOut">3x</span>
           </div>
           <div class="control">
@@ -783,10 +855,12 @@
             <input id="glowRange" type="range" min="0" max="6" step="1" value="0">
             <span class="readout" id="glowOut">0</span>
           </div>
-        </section>
+          </div>
+        </details>
 
-        <section class="section">
-          <div class="section-title"><span>Parameter Space</span><span>a,b</span></div>
+        <details class="section">
+          <summary class="section-title"><span>Parameter Space</span><span>a,b</span></summary>
+          <div class="section-content">
           <div class="inset-wrap">
             <canvas id="inset" width="168" height="168" aria-label="Parameter inset"></canvas>
             <div class="inset-copy">
@@ -794,52 +868,97 @@
               <a class="source-link" href="https://fronkonstin.com/2019/10/28/the-chaos-game-an-experiment-about-fractals-recursivity-and-creative-coding/" target="_blank" rel="noreferrer">Fronkonstin chaos-game note</a>
             </div>
           </div>
-        </section>
+          </div>
+        </details>
 
-        <section class="section">
-          <div class="section-title"><span>Presets</span><span id="presetCount">sampled</span></div>
+        <details class="section" open>
+          <summary class="section-title"><span>Presets</span><span id="presetCount">sampled</span></summary>
+          <div class="section-content">
+          <div class="preset-actions">
+            <button id="savePresetBtn" data-tip-title="Save preset" data-tip-body="Names the current a,b coordinate and stores it in this browser. Saved presets appear with the sampled presets below.">Save preset</button>
+            <button id="clearSavedBtn" class="danger" data-tip-title="Clear saved presets" data-tip-body="Removes only your locally saved presets. The sampled presets stay intact.">Clear saved</button>
+          </div>
           <div class="preset-grid" id="presetGrid"></div>
-        </section>
+          </div>
+        </details>
 
-        <section class="section">
-          <div class="section-title"><span>Audio</span><span id="audioLabel">OFF</span></div>
+        <details class="section" open>
+          <summary class="section-title"><span>Audio</span><span id="audioLabel">OFF</span></summary>
+          <div class="section-content">
+          <div class="control wide">
+            <label for="audioModeSelect" data-tip-title="Audio source" data-tip-body="All follows the whole attractor. Feed only listens to recently painted particles, so silence means you need to paint more particles into the field.">Source</label>
+            <select id="audioModeSelect" aria-label="Audio source">
+              <option value="all">All particles</option>
+              <option value="feed">Feed only</option>
+            </select>
+          </div>
           <div class="control">
             <label for="volumeRange">Gain</label>
             <input id="volumeRange" type="range" min="0" max="0.8" step="0.01" value="0.22">
             <span class="readout" id="volumeOut">0.22</span>
           </div>
           <div class="control">
-            <label for="senseRange">Sense</label>
+            <label for="senseRange" data-tip-title="Sensitivity" data-tip-body="Scales how strongly motion and particle energy open the audio gain. Higher values make quieter attractor movement audible sooner.">Sense</label>
             <input id="senseRange" type="range" min="0.2" max="2.6" step="0.05" value="1.1">
             <span class="readout" id="senseOut">1.10</span>
           </div>
           <div class="control">
-            <label for="filterRange">Filter</label>
+            <label for="filterRange" data-tip-title="Tone cutoff" data-tip-body="Sets the low-pass filter base frequency. Lower values are darker and softer; higher values let more bright particle detail through.">Filter</label>
             <input id="filterRange" type="range" min="400" max="6200" step="20" value="2400">
             <span class="readout" id="filterOut">2400</span>
           </div>
-        </section>
-
-        <section class="section">
-          <div class="section-title"><span>Output</span><span>local</span></div>
-          <div class="split">
-            <button id="copyBtn" title="Copy a short note for Simone">Copy note</button>
-            <button id="exportBtn" title="Export current frame as PNG">PNG</button>
           </div>
-          <div class="split" style="margin-top:8px">
-            <select id="paletteSelect" title="Color palette" aria-label="Color palette">
+        </details>
+
+        <details class="section" open>
+          <summary class="section-title"><span>Color</span><span>points/trails</span></summary>
+          <div class="section-content">
+          <div class="split">
+            <select id="paletteSelect" title="Base palette" aria-label="Base palette">
               <option value="kelvin">Kelvin blue</option>
               <option value="aurora">Aurora</option>
               <option value="ember">Ember</option>
               <option value="violet">Violet</option>
+              <option value="noir">Noir gold</option>
+              <option value="plasma">Plasma</option>
             </select>
-            <button id="clearBtn" class="danger" title="Clear the field">Clear</button>
+            <select id="pointColorSelect" title="Point color" aria-label="Point color">
+              <option value="auto">Points: palette</option>
+              <option value="white">Points: white</option>
+              <option value="cyan">Points: cyan</option>
+              <option value="mint">Points: mint</option>
+              <option value="gold">Points: gold</option>
+              <option value="rose">Points: rose</option>
+              <option value="violet">Points: violet</option>
+              <option value="spectrum">Points: multicolor</option>
+            </select>
           </div>
+          <div class="split" style="margin-top:8px">
+            <select id="trailColorSelect" title="Trail color" aria-label="Trail color">
+              <option value="auto">Trails: palette</option>
+              <option value="white">Trails: white</option>
+              <option value="cyan">Trails: cyan</option>
+              <option value="mint">Trails: mint</option>
+              <option value="gold">Trails: gold</option>
+              <option value="rose">Trails: rose</option>
+              <option value="violet">Trails: violet</option>
+              <option value="spectrum">Trails: multicolor</option>
+            </select>
+            <button id="clearBtn" class="danger" data-tip-title="Clear field" data-tip-body="Clears the visible canvas without changing a,b, presets, or saved settings.">Clear</button>
+          </div>
+          </div>
+        </details>
+
+        <details class="section" open>
+          <summary class="section-title"><span>Output</span><span>local</span></summary>
+          <div class="section-content">
+          <button id="exportBtn" title="Export current frame as PNG">PNG</button>
           <div class="status-line">
             <span class="status-dot" aria-hidden="true"></span>
             <span id="statusText">Ready</span>
           </div>
-        </section>
+          </div>
+        </details>
       </div>
     </aside>
   </main>
@@ -900,7 +1019,28 @@
           trail: "rgba(185, 164, 255, ALPHA)",
           hot: "rgba(255, 120, 173, ALPHA)",
           glow: "rgba(185, 164, 255, 0.74)"
+        },
+        noir: {
+          bg: "rgba(2, 2, 3, ALPHA)",
+          trail: "rgba(230, 205, 122, ALPHA)",
+          hot: "rgba(255, 245, 210, ALPHA)",
+          glow: "rgba(230, 205, 122, 0.68)"
+        },
+        plasma: {
+          bg: "rgba(4, 1, 8, ALPHA)",
+          trail: "rgba(255, 78, 205, ALPHA)",
+          hot: "rgba(114, 235, 255, ALPHA)",
+          glow: "rgba(255, 78, 205, 0.70)"
         }
+      };
+
+      const colorModes = {
+        white: [245, 248, 255],
+        cyan: [101, 220, 255],
+        mint: [130, 247, 182],
+        gold: [255, 211, 106],
+        rose: [255, 120, 173],
+        violet: [185, 164, 255]
       };
 
       const presets = [
@@ -933,13 +1073,20 @@
         fade: 0.955,
         glow: 0,
         palette: "kelvin",
+        pointColor: "auto",
+        trailColor: "auto",
         playing: true,
         sweep: false,
         inject: false,
         volume: 0.22,
         sensitivity: 1.1,
         filter: 2400,
+        audioMode: "all",
         energy: 0,
+        feedEnergy: 0,
+        feedActivity: 0,
+        feedAvgX: 0,
+        feedAvgY: 0,
         avgX: 0,
         avgY: 0,
         fps: 0
@@ -947,6 +1094,7 @@
 
       let xs = new Float32Array(state.particles);
       let ys = new Float32Array(state.particles);
+      let feedAge = new Float32Array(state.particles);
       let view = { w: 0, h: 0, cx: 0, cy: 0, scale: 1 };
       let pointerDown = false;
       let renderCursor = 0;
@@ -961,14 +1109,15 @@
       let pendingUnsafeGlow = SAFE_GLOW_MAX;
       let perfGuardOpen = false;
       let perfGuardCooldownUntil = 0;
+      let stepAccumulator = 0;
 
       const ids = [
         "hudA", "hudB", "hudEnergy", "hudFps", "stateLabel", "playBtn", "soundBtn",
         "resetBtn", "randomBtn", "sweepBtn", "injectBtn", "aRange", "bRange",
         "stepsRange", "particlesRange", "fadeRange", "glowRange", "aOut", "bOut",
         "stepsOut", "particlesOut", "fadeOut", "glowOut", "presetGrid", "audioLabel",
-        "volumeRange", "senseRange", "filterRange", "volumeOut", "senseOut",
-        "filterOut", "copyBtn", "exportBtn", "paletteSelect", "clearBtn", "statusText", "toast", "tooltip", "brushCursor", "presetCount",
+        "audioModeSelect", "volumeRange", "senseRange", "filterRange", "volumeOut", "senseOut",
+        "filterOut", "exportBtn", "paletteSelect", "pointColorSelect", "trailColorSelect", "clearBtn", "savePresetBtn", "clearSavedBtn", "statusText", "toast", "tooltip", "brushCursor", "presetCount",
         "perfModal", "perfBody", "perfGlowOut", "perfFpsOut", "perfRevertBtn", "perfProceedBtn"
       ];
       const el = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
@@ -986,6 +1135,44 @@
 
       function rgba(template, alpha) {
         return template.replace("ALPHA", alpha.toFixed(4));
+      }
+
+      function rgbColor(mode, fallback, alpha) {
+        if (mode === "auto") return fallback;
+        const rgb = colorModes[mode];
+        if (!rgb) return fallback;
+        return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha.toFixed(4)})`;
+      }
+
+      function pointColor(alpha, x, y, index, fallback) {
+        if (state.pointColor === "spectrum") {
+          const hue = (index * 0.017 + x * 140 + y * 90 + state.a * 38 + state.b * 24) % 360;
+          return `hsla(${hue < 0 ? hue + 360 : hue}, 88%, 68%, ${alpha.toFixed(4)})`;
+        }
+        return rgbColor(state.pointColor, fallback, alpha);
+      }
+
+      function trailColor(alpha, fallback) {
+        if (state.trailColor === "spectrum") {
+          const hue = ((state.a + state.b) / TAU) * 180 + performance.now() * 0.012;
+          return `hsla(${hue % 360}, 86%, 64%, ${alpha.toFixed(4)})`;
+        }
+        return rgbColor(state.trailColor, fallback, alpha);
+      }
+
+      function speedToSlider(speed) {
+        return Math.log10(Math.max(0.01, Math.min(20, Number(speed) || 1)));
+      }
+
+      function sliderToSpeed(value) {
+        return Math.max(0.01, Math.min(20, Math.pow(10, Number(value))));
+      }
+
+      function formatSpeed(value) {
+        if (value < 0.1) return `${value.toFixed(2)}x`;
+        if (value < 1) return `${value.toFixed(2)}x`;
+        if (value < 10) return `${value.toFixed(1).replace(/\.0$/, "")}x`;
+        return `${Math.round(value)}x`;
       }
 
       function clamp01(value) {
@@ -1128,9 +1315,12 @@
           fade: state.fade,
           glow: state.glow,
           palette: state.palette,
+          pointColor: state.pointColor,
+          trailColor: state.trailColor,
           volume: state.volume,
           sensitivity: state.sensitivity,
-          filter: state.filter
+          filter: state.filter,
+          audioMode: state.audioMode
         };
         localStorage.setItem("kelvin.conradi.config", JSON.stringify(payload));
       }
@@ -1143,6 +1333,11 @@
           if (parsed.version !== CONFIG_VERSION) return;
           Object.assign(state, parsed);
           state.glow = Math.min(Number(state.glow) || 0, SAFE_GLOW_MAX);
+          state.steps = Math.max(0.01, Math.min(20, Number(state.steps) || 1));
+          if (!palettes[state.palette]) state.palette = "kelvin";
+          if (state.pointColor !== "auto" && state.pointColor !== "spectrum" && !colorModes[state.pointColor]) state.pointColor = "auto";
+          if (state.trailColor !== "auto" && state.trailColor !== "spectrum" && !colorModes[state.trailColor]) state.trailColor = "auto";
+          if (!["all", "feed"].includes(state.audioMode)) state.audioMode = "all";
         } catch (error) {
           console.warn("Could not load Kelvin config", error);
         }
@@ -1181,6 +1376,7 @@
       function resetParticles() {
         xs = new Float32Array(state.particles);
         ys = new Float32Array(state.particles);
+        feedAge = new Float32Array(state.particles);
         for (let i = 0; i < state.particles; i++) {
           const angle = Math.random() * TAU;
           const radius = Math.sqrt(Math.random()) * 2.0;
@@ -1189,6 +1385,11 @@
         }
         renderCursor = 0;
         dynamicBatch = Math.min(state.particles, 1400);
+        state.feedEnergy = 0;
+        state.feedActivity = 0;
+        state.feedAvgX = 0;
+        state.feedAvgY = 0;
+        stepAccumulator = 0;
         warmParticles(18);
         clearField();
         primeField(4);
@@ -1238,6 +1439,7 @@
           const radius = Math.random() * 0.09;
           xs[i] = p.x + Math.cos(angle) * radius;
           ys[i] = p.y + Math.sin(angle) * radius;
+          feedAge[i] = 1;
         }
         setStatus("Injected local particles");
       }
@@ -1256,7 +1458,7 @@
         const pal = palettes[state.palette];
         ctx.save();
         ctx.globalCompositeOperation = "source-over";
-        ctx.strokeStyle = rgba(pal.trail, 0.07);
+        ctx.strokeStyle = trailColor(0.07, rgba(pal.trail, 0.07));
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.arc(view.cx, view.cy, view.scale, 0, TAU);
@@ -1268,10 +1470,10 @@
         ctx.restore();
       }
 
-      function drawAttractor() {
+      function drawAttractor(iterations) {
         const pal = palettes[state.palette];
         const count = state.particles;
-        const steps = state.steps;
+        const steps = Math.max(1, Math.min(20, Math.round(iterations || 1)));
         const batch = Math.max(360, Math.min(count, Math.round(dynamicBatch)));
         const lineStride = Math.max(1, Math.ceil(batch / 260));
         const glowLevel = Math.max(0, Math.min(CAUTION_GLOW_MAX, state.glow));
@@ -1283,6 +1485,10 @@
         let sampleX = 0;
         let sampleY = 0;
         let samples = 0;
+        let feedMotion = 0;
+        let feedX = 0;
+        let feedY = 0;
+        let feedWeight = 0;
 
         ctx.save();
         ctx.globalCompositeOperation = "lighter";
@@ -1292,7 +1498,8 @@
         ctx.shadowBlur = glowCaution && glowLevel > SAFE_GLOW_MAX ? Math.min(1.5, glowLevel * 0.18) : 0;
         ctx.shadowColor = pal.glow;
         ctx.beginPath();
-        ctx.fillStyle = rgba(pal.hot, hotAlpha);
+        const fallbackPoint = rgba(pal.hot, hotAlpha);
+        if (state.pointColor !== "spectrum") ctx.fillStyle = pointColor(hotAlpha, 0, 0, 0, fallbackPoint);
 
         for (let n = 0; n < batch; n++) {
           const i = (renderCursor + n) % count;
@@ -1300,6 +1507,7 @@
           const startY = ys[i];
           let x = startX;
           let y = startY;
+          const feed = feedAge[i] || 0;
 
           for (let step = 0; step < steps; step++) {
             const nx = Math.sin(x * x - y * y + state.a);
@@ -1311,6 +1519,14 @@
 
           xs[i] = x;
           ys[i] = y;
+          feedAge[i] = feed > 0.001 ? feed * Math.pow(0.986, steps) : 0;
+
+          if (feed > 0.001) {
+            feedMotion += feed * (Math.abs(x - startX) + Math.abs(y - startY));
+            feedX += x * feed;
+            feedY += y * feed;
+            feedWeight += feed;
+          }
 
           if (i % lineStride === 0) {
             const sx0 = view.cx + startX * view.scale;
@@ -1325,6 +1541,7 @@
             }
           }
 
+          if (state.pointColor === "spectrum") ctx.fillStyle = pointColor(hotAlpha, x, y, i, fallbackPoint);
           ctx.fillRect(view.cx + x * view.scale, view.cy - y * view.scale, pointSize, pointSize);
           sampleX += x;
           sampleY += y;
@@ -1332,11 +1549,15 @@
         }
         renderCursor = (renderCursor + batch) % count;
 
-        ctx.strokeStyle = rgba(pal.trail, trailAlpha);
+        ctx.strokeStyle = trailColor(trailAlpha, rgba(pal.trail, trailAlpha));
         ctx.stroke();
         ctx.restore();
 
         state.energy = motion / Math.max(1, batch * steps);
+        state.feedEnergy = feedMotion / Math.max(1, feedWeight * steps);
+        state.feedActivity = Math.min(1, feedWeight / Math.max(1, batch * 0.38));
+        state.feedAvgX = feedWeight > 0 ? feedX / feedWeight : state.avgX;
+        state.feedAvgY = feedWeight > 0 ? feedY / feedWeight : state.avgY;
         state.avgX = sampleX / Math.max(1, samples);
         state.avgY = sampleY / Math.max(1, samples);
       }
@@ -1415,7 +1636,15 @@
         el.hudEnergy.textContent = format(state.energy);
         el.hudFps.textContent = state.fps ? String(Math.round(state.fps)) : "--";
         el.stateLabel.textContent = state.inject ? "PAINTBRUSH" : state.playing ? (state.sweep ? "SWEEPING" : "RUNNING") : "PAUSED";
-        el.audioLabel.textContent = audio && audio.enabled ? "LISTENING" : "SILENT";
+        el.audioLabel.textContent = audio && audio.enabled ? (state.audioMode === "feed" ? "FEED" : "LISTENING") : "SILENT";
+      }
+
+      function takeIterationCount() {
+        stepAccumulator += Math.max(0.01, Math.min(20, state.steps));
+        const iterations = Math.floor(stepAccumulator);
+        if (iterations < 1) return 0;
+        stepAccumulator -= iterations;
+        return Math.min(20, iterations);
       }
 
       function animationFrame(now) {
@@ -1429,8 +1658,11 @@
         lastRender = now;
         updateSweep(now);
         if (state.playing) {
-          fadeField();
-          drawAttractor();
+          const iterations = takeIterationCount();
+          if (iterations > 0) {
+            fadeField();
+            drawAttractor(iterations);
+          }
         }
         drawInset(now);
         updateAudio();
@@ -1505,47 +1737,77 @@
         el.soundBtn.dataset.tipTitle = audio.enabled ? "Mute sound" : "Enable sound";
         el.soundBtn.dataset.tipBody = audio.enabled
           ? "Silences the synthesizer while the visual field keeps running."
-          : "Starts browser audio after your click. The tone follows particle motion, density, and parameter changes.";
+          : "Starts browser audio after your click. Use Audio Source to choose the full attractor or only freshly painted feed particles.";
         setStatus(audio.enabled ? "Audio engine online" : "Audio muted");
         updateTelemetry();
+      }
+
+      function findFeedIndex(seed) {
+        let best = -1;
+        let bestAge = 0;
+        const count = Math.max(1, state.particles);
+        for (let k = 0; k < 96; k++) {
+          const idx = (seed + renderCursor + k * 137) % count;
+          const age = feedAge[idx] || 0;
+          if (age > bestAge) {
+            bestAge = age;
+            best = idx;
+          }
+        }
+        return bestAge > 0.008 ? best : -1;
       }
 
       function updateAudio() {
         if (!audio) return;
         const t = audio.ac.currentTime;
-        const targetGain = audio.enabled ? state.volume * Math.min(1, 0.18 + state.energy * state.sensitivity) : 0;
+        const feedMode = state.audioMode === "feed";
+        const energy = feedMode ? state.feedEnergy : state.energy;
+        const activity = feedMode ? state.feedActivity : 1;
+        const audibleActivity = feedMode ? Math.min(1, activity * 1.7) : 1;
+        const targetGain = audio.enabled
+          ? state.volume * audibleActivity * Math.min(1, 0.18 + energy * state.sensitivity)
+          : 0;
         audio.master.gain.setTargetAtTime(targetGain, t, 0.06);
-        audio.filter.frequency.setTargetAtTime(state.filter + Math.abs(state.avgY) * 2600, t, 0.08);
-        const base = 72 + state.a * 18;
+        const avgY = feedMode ? state.feedAvgY : state.avgY;
+        audio.filter.frequency.setTargetAtTime(state.filter + Math.abs(avgY) * 2600, t, 0.08);
+        const base = 72 + state.a * 18 + (feedMode ? 36 : 0);
         const spread = 160 + state.b * 42;
 
         audio.voices.forEach((voice, i) => {
-          const idx = (voice.seed + i * 137) % Math.max(1, state.particles);
+          const idx = feedMode ? findFeedIndex(voice.seed + i * 271) : (voice.seed + i * 137) % Math.max(1, state.particles);
+          if (idx < 0) {
+            voice.gain.gain.setTargetAtTime(0.0001, t, 0.08);
+            return;
+          }
           const x = xs[idx] || 0;
           const y = ys[idx] || 0;
+          const feed = feedMode ? Math.max(0, feedAge[idx] || 0) : 1;
           const harmonic = 1 + (i % 5) * 0.375;
-          const freq = Math.max(38, base + (x + 1) * spread * harmonic + state.energy * 80);
+          const freq = Math.max(38, base + (x + 1) * spread * harmonic + energy * 80);
           voice.osc.frequency.setTargetAtTime(freq, t, 0.07);
           voice.pan.pan.setTargetAtTime(Math.max(-0.92, Math.min(0.92, x)), t, 0.09);
-          voice.gain.gain.setTargetAtTime(0.018 + Math.abs(y) * 0.012, t, 0.08);
+          voice.gain.gain.setTargetAtTime(feedMode ? (0.004 + feed * 0.046 + Math.abs(y) * 0.006) : (0.018 + Math.abs(y) * 0.012), t, 0.08);
         });
       }
 
       function syncControls(save = true) {
         el.aRange.value = state.a;
         el.bRange.value = state.b;
-        el.stepsRange.value = state.steps;
+        el.stepsRange.value = speedToSlider(state.steps);
         el.particlesRange.value = state.particles;
         el.fadeRange.value = state.fade;
         el.glowRange.value = state.glow;
+        el.audioModeSelect.value = state.audioMode;
         el.volumeRange.value = state.volume;
         el.senseRange.value = state.sensitivity;
         el.filterRange.value = state.filter;
         el.paletteSelect.value = state.palette;
+        el.pointColorSelect.value = state.pointColor;
+        el.trailColorSelect.value = state.trailColor;
 
         el.aOut.textContent = format(state.a);
         el.bOut.textContent = format(state.b);
-        el.stepsOut.textContent = `${state.steps}x`;
+        el.stepsOut.textContent = formatSpeed(state.steps);
         el.particlesOut.textContent = `${Math.round(state.particles / 1000)}k`;
         el.fadeOut.textContent = format(state.fade);
         el.glowOut.textContent = state.glow > SAFE_GLOW_MAX ? `${state.glow}!` : String(state.glow);
@@ -1564,7 +1826,7 @@
         el.soundBtn.dataset.tipTitle = audio && audio.enabled ? "Mute sound" : "Enable sound";
         el.soundBtn.dataset.tipBody = audio && audio.enabled
           ? "Silences the synthesizer while the visual field keeps running."
-          : "Starts browser audio after your click. The tone follows particle motion, density, and parameter changes.";
+          : "Starts browser audio after your click. Use Audio Source to choose the full attractor or only freshly painted feed particles.";
         el.sweepBtn.classList.toggle("is-active", state.sweep);
         el.injectBtn.classList.toggle("is-active", state.inject);
         updatePaintMode();
@@ -1579,26 +1841,88 @@
         syncControls();
       }
 
+      function loadUserPresets() {
+        try {
+          const raw = localStorage.getItem("kelvin.conradi.userPresets");
+          const parsed = raw ? JSON.parse(raw) : [];
+          if (!Array.isArray(parsed)) return [];
+          return parsed
+            .filter((preset) => preset && Number.isFinite(preset.a) && Number.isFinite(preset.b))
+            .map((preset) => ({
+              name: String(preset.name || "Saved preset").slice(0, 42),
+              a: Math.max(0, Math.min(TAU, Number(preset.a))),
+              b: Math.max(0, Math.min(TAU, Number(preset.b))),
+              saved: true
+            }));
+        } catch (error) {
+          console.warn("Could not load saved Kelvin presets", error);
+          return [];
+        }
+      }
+
+      function storeUserPresets(userPresets) {
+        localStorage.setItem("kelvin.conradi.userPresets", JSON.stringify(userPresets));
+      }
+
+      function applyPreset(name, a, b) {
+        state.a = a;
+        state.b = b;
+        state.sweep = false;
+        paramTrail.length = 0;
+        clearField();
+        syncControls();
+        setStatus(`Preset: ${name}`);
+      }
+
       function buildPresets() {
-        el.presetCount.textContent = `${presets.length} sampled`;
-        presets.forEach(([name, a, b]) => {
+        const userPresets = loadUserPresets();
+        el.presetGrid.innerHTML = "";
+        el.presetCount.textContent = userPresets.length
+          ? `${presets.length} sampled + ${userPresets.length} saved`
+          : `${presets.length} sampled`;
+        const rows = [
+          ...userPresets.map((preset) => [preset.name, preset.a, preset.b, true]),
+          ...presets.map(([name, a, b]) => [name, a, b, false])
+        ];
+        rows.forEach(([name, a, b, saved]) => {
           const button = document.createElement("button");
           const label = document.createElement("span");
           const coords = document.createElement("code");
-          label.textContent = name;
+          label.textContent = saved ? `${name} · saved` : name;
           coords.textContent = `a=${a.toFixed(3)}  b=${b.toFixed(3)}`;
           button.append(label, coords);
-          button.addEventListener("click", () => {
-            state.a = a;
-            state.b = b;
-            state.sweep = false;
-            paramTrail.length = 0;
-            clearField();
-            syncControls();
-            setStatus(`Preset: ${name}`);
-          });
+          button.addEventListener("click", () => applyPreset(name, a, b));
           el.presetGrid.append(button);
         });
+      }
+
+      function saveCurrentPreset() {
+        const suggested = `a${state.a.toFixed(3)} b${state.b.toFixed(3)}`;
+        const name = window.prompt("Name this preset", suggested);
+        if (!name) return;
+        const userPresets = loadUserPresets();
+        userPresets.unshift({
+          name: name.trim().slice(0, 42) || suggested,
+          a: Number(state.a.toFixed(6)),
+          b: Number(state.b.toFixed(6)),
+          saved: true
+        });
+        storeUserPresets(userPresets.slice(0, 30));
+        buildPresets();
+        setStatus(`Saved preset: ${name.trim().slice(0, 42) || suggested}`);
+        showToast("Preset saved");
+      }
+
+      function clearSavedPresets() {
+        const userPresets = loadUserPresets();
+        if (!userPresets.length) {
+          setStatus("No saved presets to clear");
+          return;
+        }
+        if (!window.confirm(`Clear ${userPresets.length} saved preset${userPresets.length === 1 ? "" : "s"}?`)) return;
+        localStorage.removeItem("kelvin.conradi.userPresets");
+        buildPresets();
+        setStatus("Saved presets cleared");
       }
 
       function randomize() {
@@ -1636,31 +1960,6 @@
         setStatus("Frame exported");
       }
 
-      async function copyNote() {
-        const note = [
-          "Hi Simone,",
-          "",
-          "I made a small Kelvin Console for your 2D chaotic map: it lets the attractor be steered in real time across a,b in [0,2pi], with a parameter-space inset, particle trails, presets, and browser-native sonification.",
-          "",
-          `Current local artifact: ${location.href}`,
-          "",
-          "The system:",
-          "x[n+1] = sin(x[n]^2 - y[n]^2 + a)",
-          "y[n+1] = cos(2*x[n]*y[n] + b)",
-          "",
-          "It is meant to be a playable instrument for watching and listening to the full map, not just a rendered clip."
-        ].join("\n");
-
-        try {
-          await navigator.clipboard.writeText(note);
-          showToast("Share note copied");
-          setStatus("Share note copied");
-        } catch (error) {
-          showToast("Clipboard unavailable. Note printed in console.");
-          console.log(note);
-        }
-      }
-
       function wireControls() {
         el.playBtn.addEventListener("click", () => {
           state.playing = !state.playing;
@@ -1684,7 +1983,8 @@
         el.aRange.addEventListener("input", (event) => setParameterFromInput("a", event.target.value));
         el.bRange.addEventListener("input", (event) => setParameterFromInput("b", event.target.value));
         el.stepsRange.addEventListener("input", (event) => {
-          state.steps = Number(event.target.value);
+          state.steps = sliderToSpeed(event.target.value);
+          stepAccumulator = 0;
           syncControls();
         });
         el.particlesRange.addEventListener("input", (event) => {
@@ -1710,6 +2010,11 @@
           if (requestedGlow <= SAFE_GLOW_MAX) glowCaution = false;
           syncControls();
         });
+        el.audioModeSelect.addEventListener("change", (event) => {
+          state.audioMode = event.target.value;
+          setStatus(state.audioMode === "feed" ? "Audio source: feed only. Paint to hear fresh particles." : "Audio source: full attractor");
+          syncControls();
+        });
         el.volumeRange.addEventListener("input", (event) => {
           state.volume = Number(event.target.value);
           syncControls();
@@ -1727,7 +2032,16 @@
           clearField();
           syncControls();
         });
-        el.copyBtn.addEventListener("click", copyNote);
+        el.pointColorSelect.addEventListener("change", (event) => {
+          state.pointColor = event.target.value;
+          syncControls();
+        });
+        el.trailColorSelect.addEventListener("change", (event) => {
+          state.trailColor = event.target.value;
+          syncControls();
+        });
+        el.savePresetBtn.addEventListener("click", saveCurrentPreset);
+        el.clearSavedBtn.addEventListener("click", clearSavedPresets);
         el.exportBtn.addEventListener("click", exportPng);
         el.clearBtn.addEventListener("click", clearField);
         el.perfRevertBtn.addEventListener("click", revertSafeGlow);
