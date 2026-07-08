@@ -1,7 +1,7 @@
 {
   "title": "Ifthis Archive // Public Kelvin Slice",
   "header": "Kelvin Console Archive",
-  "dek": "A public slice of a larger working archive. The grid is a curated signal patch-bay for the public Ærr frame.",
+  "dek": "A public slice of a larger working archive. The grid is a curated signal patch-bay for the public ÆrrFrame.",
   "generated": "2026-05-31 19:40",
   "mode": "public",
   "policy": {
@@ -383,11 +383,12 @@
     {
       "icon": "repo",
       "title": "Infrastructure Boundary",
-      "body": "Machine-readable/API work is linked as public infrastructure rather than described as private deployment internals."
+      "body": "Machine-readable/API work is kept outside this public archive rather than described as private deployment internals."
     }
   ],
   "infra": {
-    "label": "MCP / Infra Repository",
-    "url": "https://github.com/artseabra/aerr-sensor"
+    "label": "Private instrumentation boundary",
+    "status": "private_internal",
+    "body": "Operational MCP and sensor work is intentionally outside this public archive."
   }
 }

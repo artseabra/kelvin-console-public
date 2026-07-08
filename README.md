@@ -4,9 +4,17 @@ Reviewed: 2026-07-08
 Status: public instrument and curated archive slice
 Production: [kelvin-console-v18-epistemic-horizo.vercel.app](https://kelvin-console-v18-epistemic-horizo.vercel.app)
 
-Kelvin Console is a browser-native chaotic-map instrument from Art Seabra / Ifthis Studio.
+Kelvin Console is a browser-native chaotic-map instrument from Art Seabra / Ifthis Studio. In the public ÆrrSystem map, it is an **ÆrrConsole** surface: an instrument for operating a stateful visual/sonic system, not a paper and not a private archive dump.
 
 This public repository contains the inspectable surface: the live standalone instrument, the curated public archive slice, and the manifest that defines what is intentionally exposed.
+
+## System Position
+
+| Token | Meaning here |
+|---|---|
+| **ÆrrConsole** | Kelvin Console is a public console example: an operator-facing instrument with controls, visible state, export, and bounded archive context. |
+| **ÆrrResearch** | The console can point toward paper language, but it does not itself establish research claims. |
+| **Studio** | The signed/public route is a shipped Studio surface; private experiments stay out of this repo. |
 
 ## Live Instrument
 
